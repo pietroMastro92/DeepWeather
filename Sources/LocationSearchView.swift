@@ -35,10 +35,15 @@ struct LocationSearchView: View {
                     VStack(alignment: .leading, spacing: 1) {
                         Text(saved.name)
                             .font(.callout)
+                            .lineLimit(1)
+                            .truncationMode(.tail)
                         Text(saved.detail)
                             .font(.caption2)
                             .foregroundStyle(.secondary)
+                            .lineLimit(1)
+                            .truncationMode(.tail)
                     }
+                    .frame(maxWidth: .infinity, alignment: .leading)
                     Spacer()
                     Button("Automatic", action: useAutomatic)
                         .buttonStyle(.link)

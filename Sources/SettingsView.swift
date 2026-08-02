@@ -12,27 +12,25 @@ struct SettingsView: View {
 
             Divider()
 
-            LabeledContent("Units") {
-                Picker("", selection: $store.useMetric) {
-                    Text("Metric (°C, km/h)").tag(true)
-                    Text("Imperial (°F, mph)").tag(false)
-                }
-                .labelsHidden()
-                .pickerStyle(.segmented)
-                .frame(width: 216)
-            }
+            SegmentedSettingSection(
+                title: "Units",
+                selection: $store.useMetric,
+                options: [
+                    ("Metric (°C, km/h)", true),
+                    ("Imperial (°F, mph)", false)
+                ]
+            )
 
-            LabeledContent("Refresh") {
-                Picker("", selection: $store.refreshIntervalMinutes) {
-                    Text("10 min").tag(10)
-                    Text("15 min").tag(15)
-                    Text("30 min").tag(30)
-                    Text("60 min").tag(60)
-                }
-                .labelsHidden()
-                .pickerStyle(.segmented)
-                .frame(width: 216)
-            }
+            SegmentedSettingSection(
+                title: "Refresh",
+                selection: $store.refreshIntervalMinutes,
+                options: [
+                    ("10 min", 10),
+                    ("15 min", 15),
+                    ("30 min", 30),
+                    ("60 min", 60)
+                ]
+            )
 
             HStack {
                 Spacer()
@@ -57,5 +55,26 @@ struct SettingsView: View {
 
     private func apply() {
         store.applySettings()
+    }
+}
+
+private struct SegmentedSettingSection<Value: Hashable>: View {
+    let title: String
+    @Binding var selection: Value
+    let options: [(label: String, value: Value)]
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(title)
+                .font(.callout)
+
+            Picker("", selection: $selection) {
+                ForEach(options, id: \.value) { option in
+                    Text(option.label).tag(option.value)
+                }
+            }
+            .labelsHidden()
+            .pickerStyle(.segmented)
+        }
     }
 }
