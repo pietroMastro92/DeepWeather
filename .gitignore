@@ -1,0 +1,9 @@
+# Tuist / Xcode generated artifacts
+*.xcodeproj
+*.xcworkspace
+Derived/
+.build/
+DerivedData/
+
+# macOS
+.DS_Store
