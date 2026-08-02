@@ -11,7 +11,7 @@ struct CurrentConditionsView: View {
     let onSelectLocation: (String?) -> Void
 
     var body: some View {
-        HStack(alignment: .top, spacing: 12) {
+        HStack(alignment: .center, spacing: 16) {
             VStack(alignment: .leading, spacing: 2) {
                 LocationSwitcherMenu(
                     locationName: locationName,
@@ -39,30 +39,20 @@ struct CurrentConditionsView: View {
 
             Spacer()
 
-            heroIcon
+            WeatherIconView(symbol: iconName)
         }
         .frame(minHeight: 96)
     }
+}
 
-    private var heroIcon: some View {
-        Group {
-            if #available(macOS 26, *) {
-                Image(systemName: iconName)
-                    .font(.system(size: 30))
-                    .symbolRenderingMode(.hierarchical)
-                    .foregroundStyle(.secondary)
-                    .frame(width: 64, height: 64)
-                    .glassEffect(.regular, in: .rect(cornerRadius: 18))
-            } else {
-                Image(systemName: iconName)
-                    .font(.system(size: 30))
-                    .symbolRenderingMode(.hierarchical)
-                    .foregroundStyle(.secondary)
-                    .frame(width: 64, height: 64)
-                    .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 18))
-            }
-        }
-        .padding(.top, 2)
+private struct WeatherIconView: View {
+    let symbol: String
+
+    var body: some View {
+        Image(systemName: symbol)
+            .font(.system(size: 60, weight: .light))
+            .symbolRenderingMode(.hierarchical)
+            .foregroundStyle(.secondary)
     }
 }
 
