@@ -53,19 +53,27 @@ final class WeatherStore {
     private(set) var errorMessage: String?
     private(set) var lastUpdated: Date?
 
-    var useMetric: Bool {
+    private(set) var savedLocations: [SavedLocation] = [] {
         didSet { persistSettings() }
     }
 
-    var savedLocation: SavedLocation? {
+    var selectedLocationID: String? = nil {
         didSet { persistSettings() }
     }
 
-    var refreshIntervalMinutes: Int {
+    var useMetric: Bool = true {
+        didSet { persistSettings() }
+    }
+
+    var refreshIntervalMinutes: Int = 15 {
         didSet {
             persistSettings()
             if autoRefreshTask != nil { scheduleAutoRefresh() }
         }
+    }
+
+    var selectedLocation: SavedLocation? {
+        savedLocations.first { $0.id == selectedLocationID }
     }
 
     private let client: WeatherClient
@@ -79,13 +87,6 @@ final class WeatherStore {
     init(client: WeatherClient = WeatherClient()) {
         let defaults = UserDefaults.standard
         self.client = client
-        self.useMetric = defaults.object(forKey: Self.useMetricKey) as? Bool ?? true
-        self.refreshIntervalMinutes = defaults.object(forKey: Self.refreshIntervalKey) as? Int ?? 15
-        if let data = defaults.data(forKey: Self.savedLocationKey) {
-            self.savedLocation = try? JSONDecoder().decode(SavedLocation.self, from: data)
-        } else {
-            self.savedLocation = nil
-        }
 
         let parser = DateFormatter()
         parser.locale = Locale(identifier: "en_US_POSIX")
@@ -96,10 +97,33 @@ final class WeatherStore {
         weekday.locale = Locale(identifier: "en_US")
         weekday.dateFormat = "EEE"
         self.weekdayFormatter = weekday
+
+        // All didSet-backed properties have declaration defaults, so every
+        // assignment below already has a fully initialized `self`.
+        self.useMetric = defaults.object(forKey: Self.useMetricKey) as? Bool ?? true
+        self.refreshIntervalMinutes = defaults.object(forKey: Self.refreshIntervalKey) as? Int ?? 15
+
+        if let data = defaults.data(forKey: Self.savedLocationsKey),
+           let decoded = try? JSONDecoder().decode([SavedLocation].self, from: data) {
+            self.savedLocations = decoded
+        } else if let data = defaults.data(forKey: Self.legacySavedLocationKey),
+                  let legacy = SavedLocationMigration.legacy(from: data) {
+            self.savedLocations = [legacy]
+            defaults.removeObject(forKey: Self.legacySavedLocationKey)
+        }
+
+        let selectedID = defaults.string(forKey: Self.selectedLocationKey)
+        if let selectedID, savedLocations.contains(where: { $0.id == selectedID }) {
+            self.selectedLocationID = selectedID
+        } else {
+            defaults.removeObject(forKey: Self.selectedLocationKey)
+        }
     }
 
     private static let useMetricKey = "weatherbar.useMetric"
-    private static let savedLocationKey = "weatherbar.savedLocation"
+    private static let savedLocationsKey = "weatherbar.savedLocations"
+    private static let selectedLocationKey = "weatherbar.selectedLocationID"
+    private static let legacySavedLocationKey = "weatherbar.savedLocation"
     private static let refreshIntervalKey = "weatherbar.refreshIntervalMinutes"
 
     // MARK: - Lifecycle
@@ -129,21 +153,47 @@ final class WeatherStore {
         Task { await refresh() }
     }
 
+    // MARK: - Locations
+
     @MainActor
     func selectLocation(_ result: GeoResult) {
-        savedLocation = SavedLocation(
-            name: result.name,
-            detail: result.detail,
-            latitude: result.latitude,
-            longitude: result.longitude
-        )
+        if let existing = savedLocations.first(where: {
+            abs($0.latitude - result.latitude) < 0.001 && abs($0.longitude - result.longitude) < 0.001
+        }) {
+            selectedLocationID = existing.id
+        } else {
+            let newLocation = SavedLocation(
+                id: UUID().uuidString,
+                name: result.name,
+                detail: result.detail,
+                latitude: result.latitude,
+                longitude: result.longitude
+            )
+            savedLocations.append(newLocation)
+            selectedLocationID = newLocation.id
+        }
+        applySettings()
+    }
+
+    @MainActor
+    func selectSavedLocation(_ id: String?) {
+        guard selectedLocationID != id else { return }
+        selectedLocationID = id
+        applySettings()
+    }
+
+    @MainActor
+    func removeLocation(id: String) {
+        savedLocations.removeAll { $0.id == id }
+        if selectedLocationID == id {
+            selectedLocationID = savedLocations.first?.id
+        }
         applySettings()
     }
 
     @MainActor
     func resetToAutomaticLocation() {
-        savedLocation = nil
-        applySettings()
+        selectSavedLocation(nil)
     }
 
     // MARK: - Fetching
@@ -157,8 +207,8 @@ final class WeatherStore {
 
         do {
             let query: String?
-            if let saved = savedLocation {
-                query = String(format: "%.5f,%.5f", saved.latitude, saved.longitude)
+            if let selected = selectedLocation {
+                query = String(format: "%.5f,%.5f", selected.latitude, selected.longitude)
             } else {
                 query = nil
             }
@@ -191,12 +241,15 @@ final class WeatherStore {
     private func persistSettings() {
         defaults.set(useMetric, forKey: Self.useMetricKey)
         defaults.set(refreshIntervalMinutes, forKey: Self.refreshIntervalKey)
-        if let savedLocation {
-            if let data = try? JSONEncoder().encode(savedLocation) {
-                defaults.set(data, forKey: Self.savedLocationKey)
-            }
+        if let data = try? JSONEncoder().encode(savedLocations) {
+            defaults.set(data, forKey: Self.savedLocationsKey)
         } else {
-            defaults.removeObject(forKey: Self.savedLocationKey)
+            defaults.removeObject(forKey: Self.savedLocationsKey)
+        }
+        if let selectedLocationID {
+            defaults.set(selectedLocationID, forKey: Self.selectedLocationKey)
+        } else {
+            defaults.removeObject(forKey: Self.selectedLocationKey)
         }
     }
 
@@ -223,15 +276,15 @@ final class WeatherStore {
     // MARK: - Current conditions
 
     var locationName: String {
-        if let saved = savedLocation {
-            return saved.name
+        if let selected = selectedLocation {
+            return selected.name
         }
         return weather?.nearestArea?.first?.areaName?.first?.value ?? "Current location"
     }
 
     var locationDetail: String {
-        if let saved = savedLocation, !saved.detail.isEmpty {
-            return saved.detail
+        if let selected = selectedLocation, !selected.detail.isEmpty {
+            return selected.detail
         }
         guard let area = weather?.nearestArea?.first else { return "" }
         return [area.region?.first?.value, area.country?.first?.value]

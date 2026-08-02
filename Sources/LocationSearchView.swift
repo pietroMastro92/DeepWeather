@@ -14,46 +14,44 @@ struct LocationSearchView: View {
             Text("Location")
                 .font(.callout)
 
+            savedLocationsList
+
+            Divider()
+
             TextField("Search city…", text: $query)
                 .textFieldStyle(.roundedBorder)
                 .onChange(of: query) { _, newValue in
                     scheduleSearch(newValue)
                 }
 
-            savedStatus
             searchStatus
         }
     }
 
-    private var savedStatus: some View {
-        Group {
-            if let saved = store.savedLocation {
-                HStack(alignment: .top, spacing: 6) {
-                    Image(systemName: "mappin.circle.fill")
-                        .foregroundStyle(.secondary)
-                        .padding(.top, 1)
-                    VStack(alignment: .leading, spacing: 1) {
-                        Text(saved.name)
-                            .font(.callout)
-                            .lineLimit(1)
-                            .truncationMode(.tail)
-                        Text(saved.detail)
-                            .font(.caption2)
-                            .foregroundStyle(.secondary)
-                            .lineLimit(1)
-                            .truncationMode(.tail)
+    private var savedLocationsList: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            LocationRowView(
+                title: "Automatic (IP)",
+                subtitle: "Detected from your connection",
+                systemImage: "location",
+                isSelected: store.selectedLocationID == nil,
+                onSelect: useAutomatic,
+                onRemove: nil
+            )
+
+            ForEach(store.savedLocations) { location in
+                LocationRowView(
+                    title: location.name,
+                    subtitle: location.detail,
+                    systemImage: "mappin",
+                    isSelected: location.id == store.selectedLocationID,
+                    onSelect: {
+                        store.selectSavedLocation(location.id)
+                    },
+                    onRemove: {
+                        store.removeLocation(id: location.id)
                     }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    Spacer()
-                    Button("Automatic", action: useAutomatic)
-                        .buttonStyle(.link)
-                        .font(.caption)
-                        .help("Use automatic location (IP)")
-                }
-            } else {
-                Text("Using automatic location (IP).")
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
+                )
             }
         }
     }
@@ -111,8 +109,55 @@ struct LocationSearchView: View {
 
     private func useAutomatic() {
         store.resetToAutomaticLocation()
-        query = ""
-        results = []
+    }
+}
+
+private struct LocationRowView: View {
+    let title: String
+    let subtitle: String
+    let systemImage: String
+    let isSelected: Bool
+    let onSelect: () -> Void
+    let onRemove: (() -> Void)?
+
+    var body: some View {
+        HStack(spacing: 8) {
+            Button(action: onSelect) {
+                HStack(spacing: 8) {
+                    Image(systemName: isSelected ? "checkmark.circle.fill" : systemImage)
+                        .foregroundStyle(isSelected ? Color.accentColor : .secondary)
+                        .frame(width: 18)
+
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text(title)
+                            .font(.callout)
+                            .lineLimit(1)
+                            .truncationMode(.tail)
+                        if !subtitle.isEmpty {
+                            Text(subtitle)
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
+                                .lineLimit(1)
+                                .truncationMode(.tail)
+                        }
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+
+                    Spacer(minLength: 0)
+                }
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+
+            if let onRemove {
+                Button(action: onRemove) {
+                    Image(systemName: "trash")
+                        .foregroundStyle(.secondary)
+                }
+                .buttonStyle(.borderless)
+                .help("Remove \(title)")
+            }
+        }
     }
 }
 

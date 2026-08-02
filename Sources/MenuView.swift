@@ -12,7 +12,12 @@ struct MenuView: View {
                 locationDetail: store.locationDetail,
                 tempText: store.currentTempText,
                 conditionText: store.currentConditionText,
-                iconName: store.menuBarIcon
+                iconName: store.menuBarIcon,
+                locations: store.savedLocations,
+                selectedLocationID: store.selectedLocationID,
+                onSelectLocation: { id in
+                    store.selectSavedLocation(id)
+                }
             )
 
             if let message = store.errorMessage {

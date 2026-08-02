@@ -12,6 +12,7 @@ A minimal macOS menu bar weather app powered by [wttr.in](https://github.com/chu
 - **Moon phases** per day: phase icon, name and illumination
 - **Hourly strip** for today with rain chance
 - **3-day forecast**: min/max with condition icons
+- **Multiple saved locations**: add as many cities as you want, switch between them from a menu right in the panel or manage them in Settings (select / delete)
 - **Accurate city search**: type-ahead autocomplete via Open-Meteo geocoding (region/country shown to disambiguate homonyms); the app then queries wttr.in by exact coordinates — no more wrong fuzzy matches like "Potenza → Abriola"
 - Automatic location (IP-based) or a saved city
 - Metric / Imperial units, configurable refresh interval (10–60 min)
