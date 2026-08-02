@@ -2,11 +2,19 @@ import SwiftUI
 
 struct SettingsView: View {
     @Bindable var store: WeatherStore
+    let onDone: () -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Settings")
-                .font(.headline)
+            HStack {
+                Text("Settings")
+                    .font(.headline)
+                Spacer()
+                Button("Done", action: onDone)
+                    .buttonStyle(.bordered)
+                    .controlSize(.small)
+                    .keyboardShortcut(.cancelAction)
+            }
 
             LocationSearchView(store: store)
 

@@ -26,7 +26,7 @@ struct MenuView: View {
 
             if showSettings {
                 Divider()
-                SettingsView(store: store)
+                SettingsView(store: store, onDone: closeSettings)
             } else if store.weather != nil {
                 WeatherDataSectionView(store: store)
             } else if store.isLoading {
@@ -49,6 +49,12 @@ struct MenuView: View {
             Spacer()
         }
         .padding(.vertical, 20)
+    }
+
+    private func closeSettings() {
+        withAnimation(.easeInOut(duration: 0.15)) {
+            showSettings = false
+        }
     }
 }
 
@@ -120,9 +126,10 @@ private struct MenuFooterView: View {
     private var settingsButton: some View {
         Button(action: toggleSettings) {
             Image(systemName: "gearshape")
+                .foregroundStyle(showSettings ? Color.accentColor : Color.secondary)
         }
         .buttonStyle(.borderless)
-        .help("Settings")
+        .help(showSettings ? "Back to weather" : "Settings")
     }
 
     private var quitButton: some View {
