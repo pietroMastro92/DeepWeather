@@ -70,7 +70,8 @@ private struct WeatherDataSectionView: View {
                 points: store.chartPoints,
                 midnights: store.chartMidnights,
                 now: Date(),
-                unitSymbol: store.temperatureUnitSymbol
+                unitSymbol: store.temperatureUnitSymbol,
+                observedTemp: store.currentTempValue
             )
             PrecipitationChartView(
                 points: store.chartPoints,

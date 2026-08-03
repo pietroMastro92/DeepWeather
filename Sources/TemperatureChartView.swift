@@ -6,6 +6,7 @@ struct TemperatureChartView: View {
     let midnights: [Date]
     let now: Date
     let unitSymbol: String
+    let observedTemp: Double?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
@@ -44,6 +45,16 @@ struct TemperatureChartView: View {
                         .foregroundStyle(.secondary.opacity(0.7))
                         .lineStyle(StrokeStyle(lineWidth: 1, dash: [3, 3]))
                         .accessibilityHidden(true)
+
+                    if let observedTemp {
+                        PointMark(
+                            x: .value("Time", now),
+                            y: .value("Observed", observedTemp)
+                        )
+                        .foregroundStyle(.tint)
+                        .symbolSize(70)
+                        .accessibilityLabel("Current temperature \(observedTemp, format: .number)")
+                    }
                 }
             }
             .chartYAxis {

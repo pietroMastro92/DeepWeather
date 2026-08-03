@@ -273,6 +273,13 @@ final class WeatherStore {
         useMetric ? "°C" : "°F"
     }
 
+    var currentTempValue: Double? {
+        let raw = useMetric
+            ? weather?.currentCondition?.first?.tempC
+            : weather?.currentCondition?.first?.tempF
+        return raw.flatMap { Double($0) }
+    }
+
     // MARK: - Current conditions
 
     var locationName: String {
@@ -347,18 +354,26 @@ final class WeatherStore {
     var chartPoints: [ChartPoint] {
         guard let days = weather?.weather else { return [] }
         let calendar = Calendar.current
+        let currentHour = Calendar.current.component(.hour, from: Date())
+        let observedTemp = currentTempValue
         var points: [ChartPoint] = []
-        for day in days {
+        for (dayIndex, day) in days.enumerated() {
             guard let dateString = day.date, let baseDate = dateParser.date(from: dateString) else { continue }
             for entry in day.hourly ?? [] {
                 guard let hour = entry.hour,
                       let date = calendar.date(byAdding: .hour, value: hour, to: baseDate)
                 else { continue }
-                let rawTemp = useMetric ? entry.tempC : entry.tempF
+                let forecastTemp = (useMetric ? entry.tempC : entry.tempF).flatMap { Double($0) }
+                let temperature: Double?
+                if dayIndex == 0 && hour == currentHour, let observedTemp {
+                    temperature = observedTemp
+                } else {
+                    temperature = forecastTemp
+                }
                 points.append(ChartPoint(
                     id: date,
                     date: date,
-                    temperature: rawTemp.flatMap { Double($0) },
+                    temperature: temperature,
                     precipChance: Int(entry.chanceofrain ?? "") ?? 0
                 ))
             }
