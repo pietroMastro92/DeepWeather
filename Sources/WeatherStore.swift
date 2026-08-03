@@ -262,6 +262,13 @@ final class WeatherStore {
         )
     }
 
+    var menuBarAnimationKind: WeatherAnimationKind {
+        WeatherIconMapper.animationKind(
+            for: weather?.currentCondition?.first?.weatherCode,
+            isDay: isDay
+        )
+    }
+
     var menuBarTemp: String { currentTempText }
 
     var currentTempText: String {

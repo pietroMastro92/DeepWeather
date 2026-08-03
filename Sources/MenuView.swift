@@ -13,6 +13,7 @@ struct MenuView: View {
                 tempText: store.currentTempText,
                 conditionText: store.currentConditionText,
                 iconName: store.menuBarIcon,
+                iconKind: store.menuBarAnimationKind,
                 locations: store.savedLocations,
                 selectedLocationID: store.selectedLocationID,
                 onSelectLocation: { id in

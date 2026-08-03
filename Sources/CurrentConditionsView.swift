@@ -6,6 +6,7 @@ struct CurrentConditionsView: View {
     let tempText: String
     let conditionText: String
     let iconName: String
+    let iconKind: WeatherAnimationKind
     let locations: [SavedLocation]
     let selectedLocationID: String?
     let onSelectLocation: (String?) -> Void
@@ -39,20 +40,14 @@ struct CurrentConditionsView: View {
 
             Spacer()
 
-            WeatherIconView(symbol: iconName)
+            AnimatedWeatherIconView(
+                symbol: iconName,
+                kind: iconKind,
+                accessibilityLabel: conditionText
+            )
+            .padding(.top, 2)
         }
         .frame(minHeight: 96)
-    }
-}
-
-private struct WeatherIconView: View {
-    let symbol: String
-
-    var body: some View {
-        Image(systemName: symbol)
-            .font(.system(size: 60, weight: .light))
-            .symbolRenderingMode(.hierarchical)
-            .foregroundStyle(.secondary)
     }
 }
 
