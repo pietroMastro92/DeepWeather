@@ -27,18 +27,18 @@ let project = Project(
                     "UIInterfaceOrientationLandscapeRight"
                 ]
             ]),
-            entitlements: .file(path: "DeepWeather-iOS.entitlements"),
             sources: ["Sources/**"],
             resources: ["Resources/**"],
+            entitlements: .file(path: "DeepWeather-iOS.entitlements"),
+            dependencies: [
+                .target(name: "DeepWeatherWidget")
+            ],
             settings: .settings(base: [
                 "SWIFT_VERSION": "6.0",
                 "PRODUCT_NAME": "DeepWeather",
                 "MARKETING_VERSION": "1.0",
                 "CURRENT_PROJECT_VERSION": "1"
-            ]),
-            dependencies: [
-                .target(name: "DeepWeatherWidget")
-            ]
+            ])
         ),
         .target(
             name: "DeepWeatherWidget",
@@ -52,7 +52,6 @@ let project = Project(
                 ],
                 "GeneratedExtensionPrincipalClass": "$(PRODUCT_MODULE_NAME).DeepWeatherWidgetBundle"
             ]),
-            entitlements: .file(path: "DeepWeatherWidget.entitlements"),
             sources: [
                 "Widget/**",
                 "Sources/Shared/AppGroup.swift",
@@ -62,6 +61,7 @@ let project = Project(
                 "Sources/Shared/WeatherIconMapper.swift",
                 "Sources/Shared/SavedLocation.swift"
             ],
+            entitlements: .file(path: "DeepWeatherWidget.entitlements"),
             settings: .settings(base: [
                 "SWIFT_VERSION": "6.0",
                 "PRODUCT_NAME": "DeepWeatherWidget",

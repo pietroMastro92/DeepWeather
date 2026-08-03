@@ -2,7 +2,9 @@
 
 A minimal macOS menu bar weather app powered by [wttr.in](https://github.com/chubin/wttr.in). Just the weather, right in your menu bar — no dock icon, no window, no clutter.
 
-![macOS](https://img.shields.io/badge/macOS-14%2B-black)
+![macOS](https://img.shields.io/badge/macOS-14%2B-black) ![iOS](https://img.shields.io/badge/iOS-17%2B-blue)
+
+> An independent **iOS app** (dashboard, widgets, notifications, iPad layout) lives in [`DeepWeather-iOS/`](DeepWeather-iOS/README.md). This project is the macOS menu bar app.
 
 ## Features
 

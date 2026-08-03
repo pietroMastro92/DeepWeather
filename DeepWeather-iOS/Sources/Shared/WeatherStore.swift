@@ -72,12 +72,28 @@ final class WeatherStore {
         }
     }
 
+    var dailySummaryEnabled: Bool = false {
+        didSet { persistSettings() }
+    }
+
+    var dailySummaryHour: Int = 8 {
+        didSet { persistSettings() }
+    }
+
+    var rainAlertEnabled: Bool = false {
+        didSet { persistSettings() }
+    }
+
+    /// Coordinates reported by CoreLocation when in automatic (no saved city) mode.
+    private(set) var automaticLatitude: Double?
+    private(set) var automaticLongitude: Double?
+
     var selectedLocation: SavedLocation? {
         savedLocations.first { $0.id == selectedLocationID }
     }
 
     private let client: WeatherClient
-    private let defaults = UserDefaults.standard
+    private let defaults: UserDefaults
     private var autoRefreshTask: Task<Void, Never>?
     private let dateParser: DateFormatter
     private let weekdayFormatter: DateFormatter
@@ -85,8 +101,8 @@ final class WeatherStore {
     // MARK: - Init
 
     init(client: WeatherClient = WeatherClient()) {
-        let defaults = UserDefaults.standard
         self.client = client
+        self.defaults = AppGroup.defaults
 
         let parser = DateFormatter()
         parser.locale = Locale(identifier: "en_US_POSIX")
@@ -102,6 +118,9 @@ final class WeatherStore {
         // assignment below already has a fully initialized `self`.
         self.useMetric = defaults.object(forKey: Self.useMetricKey) as? Bool ?? true
         self.refreshIntervalMinutes = defaults.object(forKey: Self.refreshIntervalKey) as? Int ?? 15
+        self.dailySummaryEnabled = defaults.object(forKey: Self.dailySummaryEnabledKey) as? Bool ?? false
+        self.dailySummaryHour = defaults.object(forKey: Self.dailySummaryHourKey) as? Int ?? 8
+        self.rainAlertEnabled = defaults.object(forKey: Self.rainAlertEnabledKey) as? Bool ?? false
 
         if let data = defaults.data(forKey: Self.savedLocationsKey),
            let decoded = try? JSONDecoder().decode([SavedLocation].self, from: data) {
@@ -125,14 +144,19 @@ final class WeatherStore {
     private static let selectedLocationKey = "weatherbar.selectedLocationID"
     private static let legacySavedLocationKey = "weatherbar.savedLocation"
     private static let refreshIntervalKey = "weatherbar.refreshIntervalMinutes"
+    private static let dailySummaryEnabledKey = "weatherbar.dailySummaryEnabled"
+    private static let dailySummaryHourKey = "weatherbar.dailySummaryHour"
+    private static let rainAlertEnabledKey = "weatherbar.rainAlertEnabled"
 
     // MARK: - Lifecycle
 
     @MainActor
-    func startAutoRefresh() {
+    func startAutoRefresh(immediately: Bool = true) {
         guard autoRefreshTask == nil else { return }
         scheduleAutoRefresh()
-        Task { await refresh() }
+        if immediately {
+            Task { await refresh() }
+        }
     }
 
     private func scheduleAutoRefresh() {
@@ -151,6 +175,15 @@ final class WeatherStore {
     func applySettings() {
         scheduleAutoRefresh()
         Task { await refresh() }
+    }
+
+    // MARK: - Automatic location (CoreLocation)
+
+    @MainActor
+    func setAutomaticCoordinate(latitude: Double, longitude: Double) {
+        automaticLatitude = latitude
+        automaticLongitude = longitude
+        persistSettings()
     }
 
     // MARK: - Locations
@@ -209,11 +242,14 @@ final class WeatherStore {
             let query: String?
             if let selected = selectedLocation {
                 query = String(format: "%.5f,%.5f", selected.latitude, selected.longitude)
+            } else if let automaticLatitude, let automaticLongitude {
+                query = String(format: "%.5f,%.5f", automaticLatitude, automaticLongitude)
             } else {
                 query = nil
             }
             weather = try await client.fetch(location: query)
             lastUpdated = Date()
+            saveSnapshot()
         } catch {
             errorMessage = friendlyMessage(for: error)
         }
@@ -241,6 +277,9 @@ final class WeatherStore {
     private func persistSettings() {
         defaults.set(useMetric, forKey: Self.useMetricKey)
         defaults.set(refreshIntervalMinutes, forKey: Self.refreshIntervalKey)
+        defaults.set(dailySummaryEnabled, forKey: Self.dailySummaryEnabledKey)
+        defaults.set(dailySummaryHour, forKey: Self.dailySummaryHourKey)
+        defaults.set(rainAlertEnabled, forKey: Self.rainAlertEnabledKey)
         if let data = try? JSONEncoder().encode(savedLocations) {
             defaults.set(data, forKey: Self.savedLocationsKey)
         } else {
@@ -251,9 +290,28 @@ final class WeatherStore {
         } else {
             defaults.removeObject(forKey: Self.selectedLocationKey)
         }
+        saveSnapshot()
     }
 
-    // MARK: - Menu bar label
+    /// Writes the cached weather + settings snapshot shared with the widgets.
+    private func saveSnapshot() {
+        var snapshot = WeatherSnapshot.load(from: defaults)
+        if let weather {
+            snapshot.weather = weather
+            snapshot.lastUpdated = lastUpdated
+            snapshot.locationName = locationName
+            snapshot.locationDetail = locationDetail
+        }
+        snapshot.useMetric = useMetric
+        snapshot.latitude = automaticLatitude
+        snapshot.longitude = automaticLongitude
+        snapshot.dailySummaryEnabled = dailySummaryEnabled
+        snapshot.dailySummaryHour = dailySummaryHour
+        snapshot.rainAlertEnabled = rainAlertEnabled
+        snapshot.save(to: defaults)
+    }
+
+    // MARK: - Current conditions
 
     var menuBarIcon: String {
         WeatherIconMapper.symbol(
@@ -271,6 +329,13 @@ final class WeatherStore {
 
     var menuBarTemp: String { currentTempText }
 
+    var currentTempValue: Double? {
+        let raw = useMetric
+            ? weather?.currentCondition?.first?.tempC
+            : weather?.currentCondition?.first?.tempF
+        return raw.flatMap { Double($0) }
+    }
+
     var currentTempText: String {
         guard let c = weather?.currentCondition?.first else { return "--°" }
         return tempString(c.tempC, c.tempF)
@@ -279,15 +344,6 @@ final class WeatherStore {
     var temperatureUnitSymbol: String {
         useMetric ? "°C" : "°F"
     }
-
-    var currentTempValue: Double? {
-        let raw = useMetric
-            ? weather?.currentCondition?.first?.tempC
-            : weather?.currentCondition?.first?.tempF
-        return raw.flatMap { Double($0) }
-    }
-
-    // MARK: - Current conditions
 
     var locationName: String {
         if let selected = selectedLocation {
@@ -361,26 +417,18 @@ final class WeatherStore {
     var chartPoints: [ChartPoint] {
         guard let days = weather?.weather else { return [] }
         let calendar = Calendar.current
-        let currentHour = Calendar.current.component(.hour, from: Date())
-        let observedTemp = currentTempValue
         var points: [ChartPoint] = []
-        for (dayIndex, day) in days.enumerated() {
+        for day in days {
             guard let dateString = day.date, let baseDate = dateParser.date(from: dateString) else { continue }
             for entry in day.hourly ?? [] {
                 guard let hour = entry.hour,
                       let date = calendar.date(byAdding: .hour, value: hour, to: baseDate)
                 else { continue }
-                let forecastTemp = (useMetric ? entry.tempC : entry.tempF).flatMap { Double($0) }
-                let temperature: Double?
-                if dayIndex == 0 && hour == currentHour, let observedTemp {
-                    temperature = observedTemp
-                } else {
-                    temperature = forecastTemp
-                }
+                let rawTemp = useMetric ? entry.tempC : entry.tempF
                 points.append(ChartPoint(
                     id: date,
                     date: date,
-                    temperature: temperature,
+                    temperature: rawTemp.flatMap { Double($0) },
                     precipChance: Int(entry.chanceofrain ?? "") ?? 0
                 ))
             }
@@ -411,28 +459,13 @@ final class WeatherStore {
 
     var upcomingHours: [HourlyItem] {
         guard let days = weather?.weather, !days.isEmpty else { return [] }
-
-        // Show the full current day (00:00–21:00), not just the hours ahead.
-        if let today = days.first {
-            var result: [HourlyItem] = []
-            for entry in today.hourly ?? [] {
-                guard let hour = entry.hour else { continue }
-                result.append(HourlyItem(
-                    id: "0-\(hour)",
-                    hourText: String(format: "%02d:00", hour),
-                    symbol: WeatherIconMapper.symbol(for: entry.weatherCode, isDay: (6..<21).contains(hour)),
-                    tempText: tempString(entry.tempC, entry.tempF),
-                    precipChance: Int(entry.chanceofrain ?? "") ?? 0
-                ))
-            }
-            if !result.isEmpty { return result }
-        }
-
-        // Fallback: next slots across the following days.
+        let currentHour = Calendar.current.component(.hour, from: Date())
         var result: [HourlyItem] = []
+
         for (dayIndex, day) in days.prefix(2).enumerated() {
             for entry in day.hourly ?? [] {
                 guard let hour = entry.hour else { continue }
+                if dayIndex == 0 && hour < currentHour { continue }
                 result.append(HourlyItem(
                     id: "\(dayIndex)-\(hour)",
                     hourText: String(format: "%02d:00", hour),
