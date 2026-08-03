@@ -10,6 +10,10 @@ struct CurrentConditionsView: View {
     let locations: [SavedLocation]
     let selectedLocationID: String?
     let onSelectLocation: (String?) -> Void
+    var onGradient: Bool = false
+
+    private var primaryText: Color { onGradient ? .white : .primary }
+    private var secondaryText: Color { onGradient ? .white.opacity(0.85) : .secondary }
 
     var body: some View {
         HStack(alignment: .center, spacing: 16) {
@@ -18,23 +22,26 @@ struct CurrentConditionsView: View {
                     locationName: locationName,
                     locations: locations,
                     selectedLocationID: selectedLocationID,
-                    onSelect: onSelectLocation
+                    onSelect: onSelectLocation,
+                    textColor: primaryText,
+                    chevronColor: secondaryText
                 )
                 Text(locationDetail)
                     .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(secondaryText)
                     .lineLimit(1)
 
                 Spacer(minLength: 8)
 
                 Text(tempText)
                     .font(.system(size: 46, weight: .light, design: .rounded))
+                    .foregroundStyle(primaryText)
                     .contentTransition(.numericText())
                     .animation(.default, value: tempText)
 
                 Text(conditionText)
                     .font(.subheadline)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(secondaryText)
                     .lineLimit(2)
             }
 
@@ -43,7 +50,8 @@ struct CurrentConditionsView: View {
             AnimatedWeatherIconView(
                 symbol: iconName,
                 kind: iconKind,
-                accessibilityLabel: conditionText
+                accessibilityLabel: conditionText,
+                foregroundColor: primaryText
             )
             .padding(.top, 2)
         }
@@ -56,6 +64,8 @@ private struct LocationSwitcherMenu: View {
     let locations: [SavedLocation]
     let selectedLocationID: String?
     let onSelect: (String?) -> Void
+    let textColor: Color
+    let chevronColor: Color
 
     var body: some View {
         Menu {
@@ -79,10 +89,11 @@ private struct LocationSwitcherMenu: View {
             HStack(spacing: 4) {
                 Text(locationName)
                     .font(.headline)
+                    .foregroundStyle(textColor)
                     .lineLimit(1)
                 Image(systemName: "chevron.down")
                     .font(.system(size: 9, weight: .semibold))
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(chevronColor)
             }
         }
     }

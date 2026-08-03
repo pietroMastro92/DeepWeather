@@ -6,10 +6,12 @@ struct IOSSettingsView: View {
 
     @Environment(\.dismiss) private var dismiss
     @State private var showSearch = false
+    @State private var showEditName = false
 
     var body: some View {
         NavigationStack {
             Form {
+                profileSection
                 locationSection
                 unitsSection
                 refreshSection
@@ -25,6 +27,31 @@ struct IOSSettingsView: View {
             .sheet(isPresented: $showSearch) {
                 IOSLocationSearchView(store: store)
             }
+            .sheet(isPresented: $showEditName) {
+                NameEditSheet(store: store)
+            }
+        }
+    }
+
+    // MARK: - Profile
+
+    private var profileSection: some View {
+        Section {
+            LabeledContent(String(localized: "Name")) {
+                Text(store.userName ?? String(localized: "Not set"))
+                    .foregroundStyle(store.userName == nil ? .secondary : .primary)
+            }
+            Button(String(localized: "Edit name")) {
+                showEditName = true
+            }
+            Button(String(localized: "Sign out"), role: .destructive) {
+                dismiss()
+                store.signOut()
+            }
+        } header: {
+            Text(String(localized: "Profile"))
+        } footer: {
+            Text(String(localized: "Saved on this device only."))
         }
     }
 

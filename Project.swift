@@ -13,9 +13,11 @@ let project = Project(
                 "LSUIElement": true
             ]),
             sources: ["Sources/**"],
+            resources: ["Resources/**"],
             settings: .settings(base: [
                 "SWIFT_VERSION": "6.0",
-                "PRODUCT_NAME": "DeepWeather"
+                "PRODUCT_NAME": "DeepWeather",
+                "ASSETCATALOG_COMPILER_APPICON_NAME": "AppIcon"
             ])
         )
     ]

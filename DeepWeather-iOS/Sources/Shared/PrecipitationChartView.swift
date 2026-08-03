@@ -4,6 +4,7 @@ import Charts
 struct PrecipitationChartView: View {
     let points: [WeatherStore.ChartPoint]
     let midnights: [Date]
+    var accent: Color = .accentColor
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
@@ -16,7 +17,7 @@ struct PrecipitationChartView: View {
                     x: .value("Time", point.date),
                     y: .value("Chance", point.precipChance)
                 )
-                .foregroundStyle(Color.accentColor.opacity(0.55))
+                .foregroundStyle(accent.opacity(0.55))
                 .cornerRadius(2)
             }
             .chartYAxis(.hidden)
@@ -25,6 +26,7 @@ struct PrecipitationChartView: View {
                     AxisGridLine()
                 }
             }
+            .animation(.easeInOut(duration: 0.6), value: points.map(\.id))
             .frame(height: 45)
         }
     }

@@ -7,6 +7,7 @@ struct TemperatureChartView: View {
     let now: Date
     let unitSymbol: String
     let observedTemp: Double?
+    var accent: Color = .accentColor
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
@@ -23,7 +24,7 @@ struct TemperatureChartView: View {
                     .interpolationMethod(.catmullRom)
                     .foregroundStyle(
                         LinearGradient(
-                            colors: [Color.accentColor.opacity(0.25), Color.accentColor.opacity(0.02)],
+                            colors: [accent.opacity(0.28), accent.opacity(0.03)],
                             startPoint: .top,
                             endPoint: .bottom
                         )
@@ -35,7 +36,7 @@ struct TemperatureChartView: View {
                         y: .value("Temperature", temperature)
                     )
                     .interpolationMethod(.catmullRom)
-                    .foregroundStyle(.tint)
+                    .foregroundStyle(accent)
                     .lineStyle(StrokeStyle(lineWidth: 2))
                 }
 
@@ -51,7 +52,7 @@ struct TemperatureChartView: View {
                             x: .value("Time", now),
                             y: .value("Observed", observedTemp)
                         )
-                        .foregroundStyle(.tint)
+                        .foregroundStyle(accent)
                         .symbolSize(70)
                         .accessibilityLabel("Current temperature \(observedTemp, format: .number)")
                     }
@@ -66,6 +67,7 @@ struct TemperatureChartView: View {
                     AxisValueLabel(format: .dateTime.weekday(.abbreviated))
                 }
             }
+            .animation(.easeInOut(duration: 0.6), value: points.map(\.id))
             .frame(height: 110)
         }
     }

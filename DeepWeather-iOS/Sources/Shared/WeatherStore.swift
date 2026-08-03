@@ -84,6 +84,24 @@ final class WeatherStore {
         didSet { persistSettings() }
     }
 
+    /// Local profile: optional user name shown in the app.
+    var userName: String? {
+        didSet { persistSettings() }
+    }
+
+    /// Whether the welcome screen has been completed (the name is optional).
+    private(set) var isOnboarded: Bool = false {
+        didSet { persistSettings() }
+    }
+
+    /// Dynamic color theme derived from the current weather.
+    var theme: WeatherTheme {
+        WeatherTheme.for(
+            weatherCode: weather?.currentCondition?.first?.weatherCode,
+            isDay: isDay
+        )
+    }
+
     /// Coordinates reported by CoreLocation when in automatic (no saved city) mode.
     private(set) var automaticLatitude: Double?
     private(set) var automaticLongitude: Double?
@@ -121,6 +139,8 @@ final class WeatherStore {
         self.dailySummaryEnabled = defaults.object(forKey: Self.dailySummaryEnabledKey) as? Bool ?? false
         self.dailySummaryHour = defaults.object(forKey: Self.dailySummaryHourKey) as? Int ?? 8
         self.rainAlertEnabled = defaults.object(forKey: Self.rainAlertEnabledKey) as? Bool ?? false
+        self.userName = defaults.string(forKey: Self.userNameKey)
+        self.isOnboarded = defaults.bool(forKey: Self.isOnboardedKey)
 
         if let data = defaults.data(forKey: Self.savedLocationsKey),
            let decoded = try? JSONDecoder().decode([SavedLocation].self, from: data) {
@@ -147,6 +167,23 @@ final class WeatherStore {
     private static let dailySummaryEnabledKey = "weatherbar.dailySummaryEnabled"
     private static let dailySummaryHourKey = "weatherbar.dailySummaryHour"
     private static let rainAlertEnabledKey = "weatherbar.rainAlertEnabled"
+    private static let userNameKey = "weatherbar.userName"
+    private static let isOnboardedKey = "weatherbar.isOnboarded"
+
+    // MARK: - Onboarding / profile
+
+    @MainActor
+    func completeWelcome(name: String?) {
+        let trimmed = name?.trimmingCharacters(in: .whitespacesAndNewlines)
+        userName = (trimmed?.isEmpty ?? true) ? nil : trimmed
+        isOnboarded = true
+    }
+
+    @MainActor
+    func signOut() {
+        userName = nil
+        isOnboarded = false
+    }
 
     // MARK: - Lifecycle
 
@@ -280,6 +317,12 @@ final class WeatherStore {
         defaults.set(dailySummaryEnabled, forKey: Self.dailySummaryEnabledKey)
         defaults.set(dailySummaryHour, forKey: Self.dailySummaryHourKey)
         defaults.set(rainAlertEnabled, forKey: Self.rainAlertEnabledKey)
+        defaults.set(isOnboarded, forKey: Self.isOnboardedKey)
+        if let userName {
+            defaults.set(userName, forKey: Self.userNameKey)
+        } else {
+            defaults.removeObject(forKey: Self.userNameKey)
+        }
         if let data = try? JSONEncoder().encode(savedLocations) {
             defaults.set(data, forKey: Self.savedLocationsKey)
         } else {

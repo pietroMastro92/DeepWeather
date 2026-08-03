@@ -29,6 +29,9 @@ struct DashboardView: View {
                 .sheet(isPresented: $showSettings) {
                     IOSSettingsView(store: store, locationManager: locationManager)
                 }
+                .task {
+                    if store.weather == nil { await refresh() }
+                }
         }
     }
 
@@ -73,28 +76,33 @@ struct DashboardView: View {
             if store.weather != nil, let message = store.errorMessage {
                 ErrorBannerView(message: message)
             }
-            SectionCard {
+            EntranceCardView(index: 1) {
                 DetailGridView(items: store.detailItems)
             }
-            SectionCard {
+            EntranceCardView(index: 2) {
                 TemperatureChartView(
                     points: store.chartPoints,
                     midnights: store.chartMidnights,
                     now: Date(),
                     unitSymbol: store.temperatureUnitSymbol,
-                    observedTemp: store.currentTempValue
+                    observedTemp: store.currentTempValue,
+                    accent: store.theme.accent
                 )
             }
-            SectionCard {
-                PrecipitationChartView(points: store.chartPoints, midnights: store.chartMidnights)
+            EntranceCardView(index: 3) {
+                PrecipitationChartView(
+                    points: store.chartPoints,
+                    midnights: store.chartMidnights,
+                    accent: store.theme.accent
+                )
             }
-            SectionCard {
+            EntranceCardView(index: 4) {
                 MoonPhaseView(items: store.moonItems)
             }
-            SectionCard {
+            EntranceCardView(index: 5) {
                 HourlyStripView(items: store.upcomingHours)
             }
-            SectionCard {
+            EntranceCardView(index: 6) {
                 ForecastListView(items: store.dayItems)
             }
         }
@@ -109,32 +117,37 @@ struct DashboardView: View {
                 if store.weather != nil, let message = store.errorMessage {
                     ErrorBannerView(message: message)
                 }
-                SectionCard {
+                EntranceCardView(index: 1) {
                     DetailGridView(items: store.detailItems)
                 }
-                SectionCard {
+                EntranceCardView(index: 2) {
                     MoonPhaseView(items: store.moonItems)
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
 
             VStack(alignment: .leading, spacing: 16) {
-                SectionCard {
+                EntranceCardView(index: 3) {
                     TemperatureChartView(
                         points: store.chartPoints,
                         midnights: store.chartMidnights,
                         now: Date(),
                         unitSymbol: store.temperatureUnitSymbol,
-                        observedTemp: store.currentTempValue
+                        observedTemp: store.currentTempValue,
+                        accent: store.theme.accent
                     )
                 }
-                SectionCard {
-                    PrecipitationChartView(points: store.chartPoints, midnights: store.chartMidnights)
+                EntranceCardView(index: 4) {
+                    PrecipitationChartView(
+                        points: store.chartPoints,
+                        midnights: store.chartMidnights,
+                        accent: store.theme.accent
+                    )
                 }
-                SectionCard {
+                EntranceCardView(index: 5) {
                     HourlyStripView(items: store.upcomingHours)
                 }
-                SectionCard {
+                EntranceCardView(index: 6) {
                     ForecastListView(items: store.dayItems)
                 }
             }
@@ -143,7 +156,15 @@ struct DashboardView: View {
     }
 
     private var currentConditionsCard: some View {
-        SectionCard {
+        ZStack {
+            AnimatedWeatherBackgroundView(
+                gradient: store.theme.heroGradient,
+                isNight: !store.isDay,
+                showsStars: !store.isDay
+            )
+            .id(themeKey)
+            .transition(.opacity)
+
             CurrentConditionsView(
                 locationName: store.locationName,
                 locationDetail: store.locationDetail,
@@ -155,9 +176,17 @@ struct DashboardView: View {
                 selectedLocationID: store.selectedLocationID,
                 onSelectLocation: { id in
                     store.selectSavedLocation(id)
-                }
+                },
+                onGradient: true
             )
+            .padding(16)
         }
+        .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .animation(.easeInOut(duration: 1.2), value: themeKey)
+    }
+
+    private var themeKey: String {
+        "\(store.weather?.currentCondition?.first?.weatherCode ?? "none")-\(store.isDay)"
     }
 
     private func refresh() async {
@@ -190,5 +219,30 @@ private struct SectionCard<Content: View>: View {
             RoundedRectangle(cornerRadius: 14, style: .continuous)
                 .fill(Color(.secondarySystemGroupedBackground))
         )
+    }
+}
+
+/// Card with a staggered entrance animation (opacity + slide + subtle scale).
+private struct EntranceCardView<Content: View>: View {
+    let index: Int
+    @ViewBuilder var content: Content
+
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var visible = false
+
+    var body: some View {
+        SectionCard(content: content)
+            .opacity(visible ? 1 : 0)
+            .offset(y: visible ? 0 : 14)
+            .scaleEffect(visible ? 1 : 0.985)
+            .onAppear {
+                guard !reduceMotion else {
+                    visible = true
+                    return
+                }
+                withAnimation(.spring(response: 0.55, dampingFraction: 0.85).delay(Double(index) * 0.06)) {
+                    visible = true
+                }
+            }
     }
 }
