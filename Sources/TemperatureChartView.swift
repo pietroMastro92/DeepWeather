@@ -23,7 +23,7 @@ struct TemperatureChartView: View {
                     .interpolationMethod(.catmullRom)
                     .foregroundStyle(
                         LinearGradient(
-                            colors: [Color.accentColor.opacity(0.25), Color.accentColor.opacity(0.02)],
+                            colors: [Color.orange.opacity(0.30), Color.orange.opacity(0.04)],
                             startPoint: .top,
                             endPoint: .bottom
                         )
@@ -35,7 +35,7 @@ struct TemperatureChartView: View {
                         y: .value("Temperature", temperature)
                     )
                     .interpolationMethod(.catmullRom)
-                    .foregroundStyle(.tint)
+                    .foregroundStyle(Color.orange)
                     .lineStyle(StrokeStyle(lineWidth: 2))
                 }
 
@@ -51,7 +51,7 @@ struct TemperatureChartView: View {
                             x: .value("Time", now),
                             y: .value("Observed", observedTemp)
                         )
-                        .foregroundStyle(.tint)
+                        .foregroundStyle(Color.orange)
                         .symbolSize(70)
                         .accessibilityLabel("Current temperature \(observedTemp, format: .number)")
                     }

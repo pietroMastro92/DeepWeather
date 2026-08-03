@@ -16,7 +16,7 @@ struct PrecipitationChartView: View {
                     x: .value("Time", point.date),
                     y: .value("Chance", point.precipChance)
                 )
-                .foregroundStyle(Color.accentColor.opacity(0.55))
+                .foregroundStyle(Color.blue.opacity(0.6))
                 .cornerRadius(2)
             }
             .chartYAxis(.hidden)

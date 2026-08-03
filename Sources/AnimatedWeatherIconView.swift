@@ -28,7 +28,6 @@ struct AnimatedWeatherIconView: View {
     private var baseIcon: some View {
         Image(systemName: symbol)
             .font(.system(size: 60, weight: .light))
-            .symbolRenderingMode(.hierarchical)
-            .foregroundStyle(.secondary)
+            .symbolRenderingMode(.multicolor)
     }
 }
