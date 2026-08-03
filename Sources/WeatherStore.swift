@@ -411,40 +411,24 @@ final class WeatherStore {
     // MARK: - Hourly
 
     var upcomingHours: [HourlyItem] {
-        guard let days = weather?.weather, !days.isEmpty else { return [] }
+        guard let days = weather?.weather, let today = days.first else { return [] }
 
-        // Build one full cycle with all hourly entries of the available days
-        // (00:00–21:00 each), repeated 3 times so the strip can scroll
-        // horizontally in a circular fashion.
-        var cycle: [HourlyItem] = []
-        for (dayIndex, day) in days.prefix(3).enumerated() {
-            let dayLabel = dayTitle(index: dayIndex, dateString: day.date)
-            for entry in day.hourly ?? [] {
-                guard let hour = entry.hour else { continue }
-                cycle.append(HourlyItem(
-                    id: "\(dayIndex)-\(hour)",
-                    dayTitle: dayLabel,
-                    hourText: String(format: "%02d:00", hour),
-                    symbol: WeatherIconMapper.symbol(for: entry.weatherCode, isDay: (6..<21).contains(hour)),
-                    tempText: tempString(entry.tempC, entry.tempF),
-                    precipChance: Int(entry.chanceofrain ?? "") ?? 0
-                ))
-            }
+        // All the hours of the current day (00:00–21:00), starting from the
+        // beginning; they overflow the panel width and scroll horizontally.
+        let dayLabel = dayTitle(index: 0, dateString: today.date)
+        var result: [HourlyItem] = []
+        for entry in today.hourly ?? [] {
+            guard let hour = entry.hour else { continue }
+            result.append(HourlyItem(
+                id: "0-\(hour)",
+                dayTitle: dayLabel,
+                hourText: String(format: "%02d:00", hour),
+                symbol: WeatherIconMapper.symbol(for: entry.weatherCode, isDay: (6..<21).contains(hour)),
+                tempText: tempString(entry.tempC, entry.tempF),
+                precipChance: Int(entry.chanceofrain ?? "") ?? 0
+            ))
         }
-        guard !cycle.isEmpty else { return [] }
-
-        return (0..<3).flatMap { cycleIndex in
-            cycle.map { item in
-                HourlyItem(
-                    id: "\(cycleIndex)-\(item.id)",
-                    dayTitle: item.dayTitle,
-                    hourText: item.hourText,
-                    symbol: item.symbol,
-                    tempText: item.tempText,
-                    precipChance: item.precipChance
-                )
-            }
-        }
+        return result
     }
 
     // MARK: - Days

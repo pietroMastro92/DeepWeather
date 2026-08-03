@@ -9,30 +9,16 @@ struct HourlyStripView: View {
                 .font(.caption)
                 .foregroundStyle(.secondary)
 
-            ScrollViewReader { proxy in
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 16) {
-                        ForEach(items) { item in
-                            HourlyItemView(item: item)
-                                .id(item.id)
-                        }
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 16) {
+                    ForEach(items) { item in
+                        HourlyItemView(item: item)
                     }
                 }
-                .scrollBounceBehavior(.basedOnSize)
-                .onAppear {
-                    centerScroll(in: proxy)
-                }
-                .help("Scroll horizontally to see more hours")
             }
+            .scrollBounceBehavior(.basedOnSize)
+            .help("Scroll horizontally to see more hours")
         }
-    }
-
-    /// Start in the middle cycle so the strip can be scrolled in both
-    /// directions, wrapping around the hourly data like a loop.
-    private func centerScroll(in proxy: ScrollViewProxy) {
-        guard !items.isEmpty else { return }
-        let middleIndex = items.count / 2
-        proxy.scrollTo(items[middleIndex].id, anchor: .leading)
     }
 }
 
