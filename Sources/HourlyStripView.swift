@@ -16,7 +16,8 @@ struct HourlyStripView: View {
                     }
                 }
             }
-            .scrollClipDisabled()
+            .scrollBounceBehavior(.basedOnSize)
+            .help("Scroll horizontally to see more hours")
         }
     }
 }
