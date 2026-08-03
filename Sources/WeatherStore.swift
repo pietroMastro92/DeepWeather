@@ -16,6 +16,7 @@ final class WeatherStore {
 
     struct HourlyItem: Identifiable {
         let id: String
+        let dayTitle: String
         let hourText: String
         let symbol: String
         let tempText: String
@@ -417,10 +418,12 @@ final class WeatherStore {
         // horizontally in a circular fashion.
         var cycle: [HourlyItem] = []
         for (dayIndex, day) in days.prefix(3).enumerated() {
+            let dayLabel = dayTitle(index: dayIndex, dateString: day.date)
             for entry in day.hourly ?? [] {
                 guard let hour = entry.hour else { continue }
                 cycle.append(HourlyItem(
                     id: "\(dayIndex)-\(hour)",
+                    dayTitle: dayLabel,
                     hourText: String(format: "%02d:00", hour),
                     symbol: WeatherIconMapper.symbol(for: entry.weatherCode, isDay: (6..<21).contains(hour)),
                     tempText: tempString(entry.tempC, entry.tempF),
@@ -434,6 +437,7 @@ final class WeatherStore {
             cycle.map { item in
                 HourlyItem(
                     id: "\(cycleIndex)-\(item.id)",
+                    dayTitle: item.dayTitle,
                     hourText: item.hourText,
                     symbol: item.symbol,
                     tempText: item.tempText,

@@ -40,7 +40,13 @@ private struct HourlyItemView: View {
     let item: WeatherStore.HourlyItem
 
     var body: some View {
-        VStack(spacing: 5) {
+        VStack(spacing: 4) {
+            Text(item.dayTitle)
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
+
             Text(item.hourText)
                 .font(.caption)
                 .foregroundStyle(.secondary)
@@ -67,6 +73,6 @@ private struct HourlyItemView: View {
                     .font(.caption2)
             }
         }
-        .frame(width: 44)
+        .frame(width: 46)
     }
 }
