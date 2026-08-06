@@ -3,21 +3,19 @@ import SwiftUI
 struct HourlyStripView: View {
     let items: [WeatherStore.HourlyItem]
 
+    private let columns = Array(repeating: GridItem(.flexible(), spacing: 4), count: 4)
+
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             Text("Hourly")
                 .font(.caption)
                 .foregroundStyle(.secondary)
 
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 16) {
-                    ForEach(items) { item in
-                        HourlyItemView(item: item)
-                    }
+            LazyVGrid(columns: columns, spacing: 8) {
+                ForEach(items) { item in
+                    HourlyItemView(item: item)
                 }
             }
-            .scrollBounceBehavior(.basedOnSize)
-            .help("Scroll horizontally to see more hours")
         }
     }
 }
@@ -27,12 +25,6 @@ private struct HourlyItemView: View {
 
     var body: some View {
         VStack(spacing: 4) {
-            Text(item.dayTitle)
-                .font(.caption2)
-                .foregroundStyle(.secondary)
-                .lineLimit(1)
-                .minimumScaleFactor(0.8)
-
             Text(item.hourText)
                 .font(.caption)
                 .foregroundStyle(.secondary)
@@ -59,6 +51,5 @@ private struct HourlyItemView: View {
                     .font(.caption2)
             }
         }
-        .frame(width: 46)
     }
 }

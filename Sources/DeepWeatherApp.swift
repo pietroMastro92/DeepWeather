@@ -17,7 +17,7 @@ struct DeepWeatherApp: App {
     }
 
     /// MenuBarExtra panels can be dragged by their background, which steals
-    /// mouse drags from scrollable content (e.g. the hourly strip).
+    /// mouse drags from scrollable content (e.g. charts).
     private func disablePanelDragging() {
         if let panel = NSApp.windows.first(where: { $0 is NSPanel }) {
             panel.isMovableByWindowBackground = false

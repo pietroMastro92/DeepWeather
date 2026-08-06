@@ -413,8 +413,7 @@ final class WeatherStore {
     var upcomingHours: [HourlyItem] {
         guard let days = weather?.weather, let today = days.first else { return [] }
 
-        // All the hours of the current day (00:00–21:00), starting from the
-        // beginning; they overflow the panel width and scroll horizontally.
+        // All the hours of the current day (00:00–21:00 at 3 h intervals).
         let dayLabel = dayTitle(index: 0, dateString: today.date)
         var result: [HourlyItem] = []
         for entry in today.hourly ?? [] {
