@@ -71,7 +71,7 @@ enum NotificationManager {
 
     // MARK: - Helpers
 
-    private static func dailySummaryBody(weather: WeatherResponse?, useMetric: Bool) -> String {
+    static func dailySummaryBody(weather: WeatherResponse?, useMetric: Bool) -> String {
         guard let day = weather?.weather?.first else {
             return String(localized: "Open DeepWeather to see today's forecast.")
         }
@@ -82,14 +82,14 @@ enum NotificationManager {
         return "\(condition). \(String(localized: "Min")) \(min), \(String(localized: "max")) \(max). \(String(localized: "Rain chance")) \(rain)%."
     }
 
-    private static func rainChanceTomorrow(weather: WeatherResponse?) -> Int? {
+    static func rainChanceTomorrow(weather: WeatherResponse?) -> Int? {
         guard weather?.weather?.count ?? 0 >= 2, let tomorrow = weather?.weather?[1] else {
             return nil
         }
         return (tomorrow.hourly ?? []).compactMap { Int($0.chanceofrain ?? "") }.max()
     }
 
-    private static func tempString(_ c: String?, _ f: String?, useMetric: Bool) -> String {
+    static func tempString(_ c: String?, _ f: String?, useMetric: Bool) -> String {
         guard let value = useMetric ? c : f, !value.isEmpty else { return "--°" }
         return "\(value)°"
     }

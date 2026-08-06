@@ -70,6 +70,20 @@ let project = Project(
                 "APPLICATION_EXTENSION_API_ONLY": "YES",
                 "SKIP_INSTALL": "YES"
             ])
+        ),
+        .target(
+            name: "DeepWeather-iOSTests",
+            destinations: [.iPhone, .iPad],
+            product: .unitTests,
+            bundleId: "com.pietromastro.deepweather.tests",
+            deploymentTargets: .iOS("17.0"),
+            sources: ["Tests/**"],
+            dependencies: [
+                .target(name: "DeepWeather-iOS")
+            ],
+            settings: .settings(base: [
+                "SWIFT_VERSION": "6.0"
+            ])
         )
     ]
 )

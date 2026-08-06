@@ -231,7 +231,7 @@ private struct EntranceCardView<Content: View>: View {
     @State private var visible = false
 
     var body: some View {
-        SectionCard(content: content)
+        SectionCard { content }
             .opacity(visible ? 1 : 0)
             .offset(y: visible ? 0 : 14)
             .scaleEffect(visible ? 1 : 0.985)

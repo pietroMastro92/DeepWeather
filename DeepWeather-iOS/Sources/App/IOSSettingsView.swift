@@ -216,3 +216,42 @@ struct IOSSettingsView: View {
         )
     }
 }
+
+/// Sheet used to edit the local profile name.
+private struct NameEditSheet: View {
+    @Bindable var store: WeatherStore
+
+    @Environment(\.dismiss) private var dismiss
+    @State private var name: String
+
+    init(store: WeatherStore) {
+        self._store = Bindable(store)
+        _name = State(initialValue: store.userName ?? "")
+    }
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                TextField(String(localized: "Your name"), text: $name)
+                    .autocorrectionDisabled()
+                    .textInputAutocapitalization(.words)
+            }
+            .navigationTitle(String(localized: "Edit name"))
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button(String(localized: "Cancel")) { dismiss() }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button(String(localized: "Save")) { save() }
+                }
+            }
+        }
+    }
+
+    private func save() {
+        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        store.userName = trimmed.isEmpty ? nil : trimmed
+        dismiss()
+    }
+}

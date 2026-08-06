@@ -1,22 +1,21 @@
 # DeepWeather for iOS
 
+> **Canonical repository:** [pietroMastro92/DeepWeather-iOS](https://github.com/pietroMastro92/DeepWeather-iOS)  
+> Prefer cloning the dedicated repo for iOS-only work. This folder remains in the monorepo for convenience.
+
 Native iOS port of the [DeepWeather](../README.md) weather app: full dashboard with current conditions, charts, moon phases, hourly strip and 3-day forecast — plus a home/lock screen widget, local weather notifications and an iPad-optimized layout.
 
 > The macOS menu bar app at the repo root is unchanged. This is an independent Tuist project.
 
-## Features
+## Standalone clone (recommended)
 
-- **Dashboard**: current conditions (SF Symbol animated icon, temperature, feels like, humidity, wind, UV, pressure, visibility, precipitation, cloud cover, sunrise/sunset), temperature + precipitation charts (Swift Charts), moon phases, hourly strip, 3-day forecast
-- **Splash screen**: system launch screen (brand color + logo) + short animated in-app splash
-- **Locations**: Open-Meteo city search, multiple saved cities, swipe-to-delete; automatic location via CoreLocation GPS with graceful fallback to IP-based location if denied
-- **Units**: Metric / Imperial; configurable refresh interval (10–60 min)
-- **Widgets**: Home Screen (`systemSmall`, `systemMedium`) and Lock Screen (`accessoryCircular`, `accessoryRectangular`, `accessoryInline`); data shared through an App Group
-- **Notifications** (local, no server): optional daily morning summary and an evening rain alert when tomorrow's rain chance is ≥ 60%
-- **iPad**: two-column layout on regular width
-- **Localized**: English (base) + Italian, follows the device language
-- **Native look**: dark/light mode, SwiftUI, iOS 17+
+```bash
+git clone https://github.com/pietroMastro92/DeepWeather-iOS.git
+cd DeepWeather-iOS
+./run-ios.sh
+```
 
-## Building from source
+## Building from this monorepo
 
 Requires Xcode 26+ and [Tuist](https://tuist.dev) (`brew install tuist`).
 
@@ -26,6 +25,20 @@ cd DeepWeather-iOS
 ```
 
 `run-ios.sh` builds for the `iPhone 17` simulator by default; override with `SIM_NAME="iPhone 16"`.
+
+## Features
+
+- **Dashboard**: current conditions (SF Symbol animated icon, temperature, feels like, humidity, wind, UV, pressure, visibility, precipitation, cloud cover, sunrise/sunset), temperature + precipitation charts (Swift Charts), moon phases, hourly strip, 3-day forecast
+- **Welcome screen**: optional local profile (your name) shown on first launch, editable from Settings
+- **Dynamic weather theme**: animated hero gradient that changes with conditions and time of day (sunny, clear night, rain, snow, storm, fog), refined staggered animations and live chart transitions
+- **Splash screen**: system launch screen (brand color + logo) + short animated in-app splash
+- **Locations**: Open-Meteo city search, multiple saved cities, swipe-to-delete; automatic location via CoreLocation GPS with graceful fallback to IP-based location if denied
+- **Units**: Metric / Imperial; configurable refresh interval (10–60 min)
+- **Widgets**: Home Screen (`systemSmall`, `systemMedium`) and Lock Screen (`accessoryCircular`, `accessoryRectangular`, `accessoryInline`); data shared through an App Group
+- **Notifications** (local, no server): optional daily morning summary and an evening rain alert when tomorrow's rain chance is ≥ 60%
+- **iPad**: two-column layout on regular width
+- **Localized**: English (base) + Italian, follows the device language
+- **Native look**: dark/light mode, SwiftUI, iOS 17+
 
 ## Notes (free Apple Developer account)
 
@@ -57,4 +70,4 @@ Then upload with `xcrun altool --upload-app -f .build/Export/DeepWeather.ipa -t 
 
 ## License
 
-[MIT](../LICENSE)
+[MIT](../LICENSE) — same license as the monorepo and the [standalone iOS repo](https://github.com/pietroMastro92/DeepWeather-iOS).

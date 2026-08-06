@@ -54,7 +54,7 @@ struct AnimatedWeatherBackgroundView: View {
                     .foregroundStyle(.white.opacity(0.55))
                     .symbolEffect(
                         .pulse,
-                        options: .speed(0.6 + Double(index) * 0.2).repeat(.continuous)
+                        options: .speed(0.6 + Double(index) * 0.2).repeating
                     )
                     .position(
                         x: size.width * (0.10 + 0.17 * CGFloat(index)),

@@ -4,7 +4,7 @@ A minimal macOS menu bar weather app powered by [wttr.in](https://github.com/chu
 
 ![macOS](https://img.shields.io/badge/macOS-14%2B-black) ![iOS](https://img.shields.io/badge/iOS-17%2B-blue)
 
-> An independent **iOS app** (dashboard, widgets, notifications, iPad layout) lives in [`DeepWeather-iOS/`](DeepWeather-iOS/README.md). This project is the macOS menu bar app.
+> An independent **iOS app** (dashboard, widgets, notifications, iPad layout) lives in [`DeepWeather-iOS/`](DeepWeather-iOS/README.md) and is also published as its own repo: **[pietroMastro92/DeepWeather-iOS](https://github.com/pietroMastro92/DeepWeather-iOS)** (recommended for iOS-only work). This project is the macOS menu bar app.
 
 ## Features
 

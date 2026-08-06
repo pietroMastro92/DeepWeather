@@ -245,6 +245,97 @@
         "en" : { "stringUnit" : { "state" : "translated", "value" : "min" } },
         "it" : { "stringUnit" : { "state" : "translated", "value" : "min" } }
       }
+    },
+    "Continue without a name" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Continue without a name" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Continua senza nome" } }
+      }
+    },
+    "Edit name" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Edit name" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Modifica nome" } }
+      }
+    },
+    "Name" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Name" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Nome" } }
+      }
+    },
+    "Not set" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Not set" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Non impostato" } }
+      }
+    },
+    "Profile" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Profile" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Profilo" } }
+      }
+    },
+    "Save" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Save" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Salva" } }
+      }
+    },
+    "Saved on this device only." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Saved on this device only." } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Salvato solo su questo dispositivo." } }
+      }
+    },
+    "Sign out" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Sign out" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Esci" } }
+      }
+    },
+    "Start" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Start" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Inizia" } }
+      }
+    },
+    "Weather, beautifully animated." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Weather, beautifully animated." } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Il meteo, animato con eleganza." } }
+      }
+    },
+    "Welcome" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Welcome" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Benvenuto" } }
+      }
+    },
+    "Welcome to DeepWeather" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Welcome to DeepWeather" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Benvenuto in DeepWeather" } }
+      }
+    },
+    "Your name" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Your name" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Il tuo nome" } }
+      }
     }
   },
   "version" : "1.0"
