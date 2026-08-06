@@ -2,6 +2,7 @@ import SwiftUI
 
 struct SettingsView: View {
     @Bindable var store: WeatherStore
+    let updateChecker: UpdateChecker
     let onDone: () -> Void
 
     var body: some View {
@@ -43,6 +44,22 @@ struct SettingsView: View {
             HStack {
                 Spacer()
                 applyButton
+            }
+
+            Divider()
+
+            VersionInfoView(
+                currentVersion: UpdateChecker.currentVersion,
+                latestVersion: updateChecker.latestVersion,
+                updateAvailable: updateChecker.updateAvailable,
+                isChecking: updateChecker.isChecking,
+                onCheck: { Task { await updateChecker.checkForUpdates() } }
+            )
+
+            if let error = updateChecker.errorMessage {
+                Text(error)
+                    .font(.caption2)
+                    .foregroundStyle(.red)
             }
         }
     }

@@ -10,7 +10,8 @@ let project = Project(
             bundleId: "com.pietromastro.deepweather",
             deploymentTargets: .macOS("14.0"),
             infoPlist: .extendingDefault(with: [
-                "LSUIElement": true
+                "LSUIElement": true,
+                "CFBundleShortVersionString": "1.5.0"
             ]),
             sources: ["Sources/**"],
             resources: ["Resources/**"],

@@ -3,6 +3,7 @@ import AppKit
 
 struct MenuView: View {
     @Bindable var store: WeatherStore
+    let updateChecker: UpdateChecker
     @State private var showSettings = false
 
     var body: some View {
@@ -25,9 +26,22 @@ struct MenuView: View {
                 ErrorBannerView(message: message)
             }
 
+            if updateChecker.updateAvailable, let version = updateChecker.latestVersion {
+                UpdateBannerView(
+                    version: version,
+                    isDownloading: updateChecker.isDownloading,
+                    progress: updateChecker.downloadProgress,
+                    onUpdate: { Task { await updateChecker.downloadAndInstall() } }
+                )
+            }
+
             if showSettings {
                 Divider()
-                SettingsView(store: store, onDone: closeSettings)
+                SettingsView(
+                    store: store,
+                    updateChecker: updateChecker,
+                    onDone: closeSettings
+                )
             } else if store.weather != nil {
                 WeatherDataSectionView(store: store)
             } else if store.isLoading {
