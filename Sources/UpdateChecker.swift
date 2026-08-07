@@ -34,6 +34,9 @@ final class UpdateChecker {
     private static let checkIntervalSeconds: TimeInterval = 3600 // 1 h
     private var autoCheckTask: Task<Void, Never>?
 
+    /// Key used to remember which version we already notified about.
+    private static let notifiedVersionKey = "UpdateChecker.notifiedVersion"
+
     // MARK: - Lifecycle
 
     /// Begin periodic update checks. Safe to call more than once.
@@ -68,7 +71,7 @@ final class UpdateChecker {
                 .browserDownloadUrl
 
             if updateAvailable {
-                await sendUpdateNotification(version: version)
+                await sendUpdateNotificationOnce(version: version)
             }
         } catch {
             errorMessage = "Could not check for updates."
@@ -111,7 +114,21 @@ final class UpdateChecker {
             }
             downloadProgress = 0.8
 
-            // 4. Prepare a shell script that replaces the bundle after quit
+            // 4. Safety check: verify the downloaded binary actually has a
+            //    higher version than the running app. This prevents infinite
+            //    update loops when the release asset was built before a
+            //    version bump.
+            let newPlistURL = newApp.appendingPathComponent("Contents/Info.plist")
+            guard let newPlist = NSDictionary(contentsOf: newPlistURL),
+                  let newVersion = newPlist["CFBundleShortVersionString"] as? String,
+                  Self.isNewer(newVersion, than: Self.currentVersion)
+            else {
+                // Cleanup temp files
+                try? FileManager.default.removeItem(at: extractDir)
+                throw UpdateError.sameOrOlderVersion
+            }
+
+            // 5. Prepare a shell script that replaces the bundle after quit
             let currentApp = Bundle.main.bundleURL
             let script = updaterScript(
                 newAppPath: newApp.path(percentEncoded: false),
@@ -128,7 +145,7 @@ final class UpdateChecker {
             )
             downloadProgress = 1.0
 
-            // 5. Launch the updater script and quit
+            // 6. Launch the updater script and quit
             let launcher = Process()
             launcher.executableURL = URL(fileURLWithPath: "/bin/zsh")
             launcher.arguments = [scriptURL.path(percentEncoded: false)]
@@ -173,11 +190,16 @@ final class UpdateChecker {
     private enum UpdateError: LocalizedError {
         case extractionFailed
         case appNotFound
+        case sameOrOlderVersion
 
         var errorDescription: String? {
             switch self {
-            case .extractionFailed: return "Failed to extract update archive."
-            case .appNotFound: return "App bundle not found in download."
+            case .extractionFailed:
+                return "Failed to extract update archive."
+            case .appNotFound:
+                return "App bundle not found in download."
+            case .sameOrOlderVersion:
+                return "Downloaded version is not newer than the installed version."
             }
         }
     }
@@ -271,9 +293,15 @@ final class UpdateChecker {
         """
     }
 
-    // MARK: - macOS notification
+    // MARK: - macOS notification (one-shot per version)
 
-    private func sendUpdateNotification(version: String) async {
+    /// Sends a macOS notification only once per discovered version.
+    /// Subsequent periodic checks for the same version stay silent.
+    private func sendUpdateNotificationOnce(version: String) async {
+        let alreadyNotified = UserDefaults.standard
+            .string(forKey: Self.notifiedVersionKey)
+        guard alreadyNotified != version else { return }
+
         let center = UNUserNotificationCenter.current()
         let settings = await center.notificationSettings()
 
@@ -295,12 +323,14 @@ final class UpdateChecker {
             trigger: nil
         )
         try? await center.add(request)
+
+        UserDefaults.standard.set(version, forKey: Self.notifiedVersionKey)
     }
 
     // MARK: - Semver comparison
 
     /// Returns `true` when `lhs` is a higher semantic version than `rhs`.
-    private static func isNewer(_ lhs: String, than rhs: String) -> Bool {
+    static func isNewer(_ lhs: String, than rhs: String) -> Bool {
         let lParts = lhs.split(separator: ".").compactMap { Int($0) }
         let rParts = rhs.split(separator: ".").compactMap { Int($0) }
         for i in 0..<max(lParts.count, rParts.count) {
