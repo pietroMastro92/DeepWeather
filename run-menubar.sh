@@ -1,5 +1,5 @@
 #!/bin/zsh
-# Build DeepWeather with Tuist and launch it in the menu bar.
+# Build DeepWeather (Universal Binary: arm64 + x86_64) with Tuist and launch it.
 set -euo pipefail
 cd "$(dirname "$0")"
 
