@@ -11,9 +11,11 @@ struct CurrentConditionsView: View {
     let selectedLocationID: String?
     let onSelectLocation: (String?) -> Void
 
+    @Environment(\.menuPanelMetrics) private var metrics
+
     var body: some View {
         HStack(alignment: .center, spacing: 16) {
-            VStack(alignment: .leading, spacing: 2) {
+            VStack(alignment: .leading, spacing: metrics.headerSpacing) {
                 LocationSwitcherMenu(
                     locationName: locationName,
                     locations: locations,
@@ -25,29 +27,40 @@ struct CurrentConditionsView: View {
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
 
-                Spacer(minLength: 8)
-
-                Text(tempText)
-                    .font(.system(size: 46, weight: .light, design: .rounded))
+                if metrics.conditionSharesTempLine {
+                    HStack(alignment: .firstTextBaseline, spacing: 8) {
+                        Text(tempText)
+                            .font(.system(size: metrics.temperatureFontSize, weight: .light, design: .rounded))
+                        Text(conditionText)
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
+                    }
                     .contentTransition(.numericText())
                     .animation(.default, value: tempText)
+                } else {
+                    Text(tempText)
+                        .font(.system(size: metrics.temperatureFontSize, weight: .light, design: .rounded))
+                        .contentTransition(.numericText())
+                        .animation(.default, value: tempText)
 
-                Text(conditionText)
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(2)
+                    Text(conditionText)
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(2)
+                }
             }
-
-            Spacer()
+            .frame(maxWidth: .infinity, alignment: .leading)
 
             AnimatedWeatherIconView(
                 symbol: iconName,
                 kind: iconKind,
-                accessibilityLabel: conditionText
+                accessibilityLabel: conditionText,
+                size: metrics.heroIconSize
             )
             .padding(.top, 2)
         }
-        .frame(minHeight: 96)
+        .fixedSize(horizontal: false, vertical: true)
     }
 }
 

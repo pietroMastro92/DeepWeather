@@ -11,10 +11,13 @@ struct LocationSearchView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Location")
-                .font(.callout)
-
-            savedLocationsList
+            SavedLocationsList(
+                locations: store.savedLocations,
+                selectedLocationID: store.selectedLocationID,
+                onSelectAutomatic: useAutomatic,
+                onSelect: { store.selectSavedLocation($0) },
+                onRemove: { store.removeLocation(id: $0) }
+            )
 
             Divider()
 
@@ -24,61 +27,12 @@ struct LocationSearchView: View {
                     scheduleSearch(newValue)
                 }
 
-            searchStatus
-        }
-    }
-
-    private var savedLocationsList: some View {
-        VStack(alignment: .leading, spacing: 2) {
-            LocationRowView(
-                title: "Automatic (IP)",
-                subtitle: "Detected from your connection",
-                systemImage: "location",
-                isSelected: store.selectedLocationID == nil,
-                onSelect: useAutomatic,
-                onRemove: nil
+            LocationSearchStatus(
+                query: query,
+                results: results,
+                isSearching: isSearching,
+                onSelect: select
             )
-
-            ForEach(store.savedLocations) { location in
-                LocationRowView(
-                    title: location.name,
-                    subtitle: location.detail,
-                    systemImage: "mappin",
-                    isSelected: location.id == store.selectedLocationID,
-                    onSelect: {
-                        store.selectSavedLocation(location.id)
-                    },
-                    onRemove: {
-                        store.removeLocation(id: location.id)
-                    }
-                )
-            }
-        }
-    }
-
-    private var searchStatus: some View {
-        Group {
-            if isSearching {
-                HStack(spacing: 6) {
-                    ProgressView()
-                        .controlSize(.small)
-                    Text("Searching…")
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
-                }
-            } else if !results.isEmpty {
-                VStack(alignment: .leading, spacing: 2) {
-                    ForEach(results) { result in
-                        LocationResultRow(result: result) {
-                            select(result)
-                        }
-                    }
-                }
-            } else if !query.isEmpty {
-                Text("No results.")
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
-            }
         }
     }
 
@@ -109,6 +63,69 @@ struct LocationSearchView: View {
 
     private func useAutomatic() {
         store.resetToAutomaticLocation()
+    }
+}
+
+private struct SavedLocationsList: View {
+    let locations: [SavedLocation]
+    let selectedLocationID: String?
+    let onSelectAutomatic: () -> Void
+    let onSelect: (String) -> Void
+    let onRemove: (String) -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            LocationRowView(
+                title: "Automatic (IP)",
+                subtitle: "Detected from your connection",
+                systemImage: "location",
+                isSelected: selectedLocationID == nil,
+                onSelect: onSelectAutomatic,
+                onRemove: nil
+            )
+
+            ForEach(locations) { location in
+                LocationRowView(
+                    title: location.name,
+                    subtitle: location.detail,
+                    systemImage: "mappin",
+                    isSelected: location.id == selectedLocationID,
+                    onSelect: { onSelect(location.id) },
+                    onRemove: { onRemove(location.id) }
+                )
+            }
+        }
+    }
+}
+
+private struct LocationSearchStatus: View {
+    let query: String
+    let results: [GeoResult]
+    let isSearching: Bool
+    let onSelect: (GeoResult) -> Void
+
+    var body: some View {
+        if isSearching {
+            HStack(spacing: 6) {
+                ProgressView()
+                    .controlSize(.small)
+                Text("Searching…")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+            }
+        } else if !results.isEmpty {
+            VStack(alignment: .leading, spacing: 2) {
+                ForEach(results) { result in
+                    LocationResultRow(result: result) {
+                        onSelect(result)
+                    }
+                }
+            }
+        } else if !query.isEmpty {
+            Text("No results.")
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+        }
     }
 }
 

@@ -1,5 +1,6 @@
 import Foundation
 import Observation
+import ServiceManagement
 
 @MainActor
 @Observable
@@ -7,14 +8,14 @@ final class WeatherStore {
 
     // MARK: - View models
 
-    struct DetailItem: Identifiable {
+    struct DetailItem: Identifiable, Equatable {
         let id: String
         let symbol: String
         let title: String
         let value: String
     }
 
-    struct HourlyItem: Identifiable {
+    struct HourlyItem: Identifiable, Equatable {
         let id: String
         let dayTitle: String
         let hourText: String
@@ -23,7 +24,7 @@ final class WeatherStore {
         let precipChance: Int
     }
 
-    struct DayItem: Identifiable {
+    struct DayItem: Identifiable, Equatable {
         let id: String
         let title: String
         let symbol: String
@@ -32,14 +33,14 @@ final class WeatherStore {
         let precipChance: Int
     }
 
-    struct ChartPoint: Identifiable {
+    struct ChartPoint: Identifiable, Equatable {
         let id: Date
         let date: Date
         let temperature: Double?
         let precipChance: Int
     }
 
-    struct MoonItem: Identifiable {
+    struct MoonItem: Identifiable, Equatable {
         let id: String
         let title: String
         let phaseSymbol: String
@@ -63,31 +64,59 @@ final class WeatherStore {
     }
 
     var useMetric: Bool = true {
-        didSet { persistSettings() }
+        didSet {
+            persistSettings()
+            guard !isHydrating else { return }
+            recomputeViewModels()
+        }
     }
+
+    private(set) var detailItems: [DetailItem] = []
+    private(set) var chartMidnights: [Date] = []
+    private(set) var chartPoints: [ChartPoint] = []
+    private(set) var moonItems: [MoonItem] = []
+    private(set) var upcomingHours: [HourlyItem] = []
+    private(set) var dayItems: [DayItem] = []
+    /// Hour-aligned clock used by charts so `body` never constructs `Date()`.
+    private(set) var referenceNow = Date()
 
     var refreshIntervalMinutes: Int = 15 {
         didSet {
             persistSettings()
-            if autoRefreshTask != nil { scheduleAutoRefresh() }
+            guard !isHydrating else { return }
+            scheduleAutoRefresh()
         }
     }
+
+    /// IDs the user hid in Display. Missing ID means the Measurement is shown.
+    private(set) var hiddenMeasurementIDs: Set<String> = []
+
+    /// Actual login-item status. User intent is stored separately so a failed
+    /// register() cannot clobber the saved-locations payload during init.
+    private(set) var launchAtLogin = false
+    private(set) var launchAtLoginError: String?
 
     var selectedLocation: SavedLocation? {
         savedLocations.first { $0.id == selectedLocationID }
     }
 
     private let client: WeatherClient
-    private let defaults = UserDefaults.standard
+    private let persistEnabled: Bool
+    private let defaults: UserDefaults
     private var autoRefreshTask: Task<Void, Never>?
     private let dateParser: DateFormatter
     private let weekdayFormatter: DateFormatter
+    /// Blocks didSet persistence while init restores UserDefaults. Without this,
+    /// assigning useMetric/refreshInterval writes an empty locations array and
+    /// wipes cities the user added in a previous session.
+    private var isHydrating = true
 
     // MARK: - Init
 
     init(client: WeatherClient = WeatherClient()) {
-        let defaults = UserDefaults.standard
         self.client = client
+        self.persistEnabled = true
+        self.defaults = .standard
 
         let parser = DateFormatter()
         parser.locale = Locale(identifier: "en_US_POSIX")
@@ -99,33 +128,65 @@ final class WeatherStore {
         weekday.dateFormat = "EEE"
         self.weekdayFormatter = weekday
 
-        // All didSet-backed properties have declaration defaults, so every
-        // assignment below already has a fully initialized `self`.
-        self.useMetric = defaults.object(forKey: Self.useMetricKey) as? Bool ?? true
-        self.refreshIntervalMinutes = defaults.object(forKey: Self.refreshIntervalKey) as? Int ?? 15
+        let restored = Self.restoreSettings(from: defaults)
+        self.useMetric = restored.useMetric
+        self.refreshIntervalMinutes = restored.refreshIntervalMinutes
+        self.savedLocations = restored.locations
+        self.selectedLocationID = restored.selectedLocationID
+        self.hiddenMeasurementIDs = restored.hiddenMeasurementIDs
 
-        if let data = defaults.data(forKey: Self.savedLocationsKey),
-           let decoded = try? JSONDecoder().decode([SavedLocation].self, from: data) {
-            self.savedLocations = decoded
-        } else if let data = defaults.data(forKey: Self.legacySavedLocationKey),
-                  let legacy = SavedLocationMigration.legacy(from: data) {
-            self.savedLocations = [legacy]
-            defaults.removeObject(forKey: Self.legacySavedLocationKey)
+        isHydrating = false
+
+        if restored.migratedLegacyLocation {
+            persistSettings()
         }
 
-        let selectedID = defaults.string(forKey: Self.selectedLocationKey)
-        if let selectedID, savedLocations.contains(where: { $0.id == selectedID }) {
-            self.selectedLocationID = selectedID
-        } else {
-            defaults.removeObject(forKey: Self.selectedLocationKey)
-        }
+        reconcileLaunchAtLogin(preferred: restored.preferredLaunchAtLogin)
     }
+
+#if DEBUG
+    /// Seeds a store without touching the user's real UserDefaults.
+    init(
+        previewWeather: WeatherResponse?,
+        locations: [SavedLocation] = [],
+        selectedID: String? = nil,
+        isLoading: Bool = false,
+        errorMessage: String? = nil,
+        lastUpdated: Date? = nil
+    ) {
+        self.client = WeatherClient()
+        self.persistEnabled = false
+        self.defaults = UserDefaults(suiteName: "DeepWeather.previews") ?? .standard
+
+        let parser = DateFormatter()
+        parser.locale = Locale(identifier: "en_US_POSIX")
+        parser.dateFormat = "yyyy-MM-dd"
+        self.dateParser = parser
+
+        let weekday = DateFormatter()
+        weekday.locale = Locale(identifier: "en_US")
+        weekday.dateFormat = "EEE"
+        self.weekdayFormatter = weekday
+
+        self.savedLocations = locations
+        self.selectedLocationID = selectedID
+        self.weather = previewWeather
+        self.isLoading = isLoading
+        self.errorMessage = errorMessage
+        self.lastUpdated = lastUpdated
+        self.referenceNow = Self.hourAlignedNow()
+        self.isHydrating = false
+        recomputeViewModels()
+    }
+#endif
 
     private static let useMetricKey = "weatherbar.useMetric"
     private static let savedLocationsKey = "weatherbar.savedLocations"
     private static let selectedLocationKey = "weatherbar.selectedLocationID"
     private static let legacySavedLocationKey = "weatherbar.savedLocation"
     private static let refreshIntervalKey = "weatherbar.refreshIntervalMinutes"
+    private static let launchAtLoginKey = "weatherbar.launchAtLogin"
+    private static let hiddenMeasurementsKey = "weatherbar.hiddenMeasurementIDs"
 
     // MARK: - Lifecycle
 
@@ -152,6 +213,28 @@ final class WeatherStore {
     func applySettings() {
         scheduleAutoRefresh()
         Task { await refresh() }
+    }
+
+    func isMeasurementVisible(_ id: MeasurementID) -> Bool {
+        !hiddenMeasurementIDs.contains(id.rawValue)
+    }
+
+    @MainActor
+    func setMeasurementVisible(_ id: MeasurementID, _ visible: Bool) {
+        if visible {
+            hiddenMeasurementIDs.remove(id.rawValue)
+        } else {
+            hiddenMeasurementIDs.insert(id.rawValue)
+        }
+        persistSettings()
+        recomputeViewModels()
+    }
+
+    @MainActor
+    func setLaunchAtLogin(_ enabled: Bool) {
+        defaults.set(enabled, forKey: Self.launchAtLoginKey)
+        applyLaunchAtLogin(enabled)
+        persistSettings()
     }
 
     // MARK: - Locations
@@ -215,6 +298,8 @@ final class WeatherStore {
             }
             weather = try await client.fetch(location: query)
             lastUpdated = Date()
+            referenceNow = Self.hourAlignedNow()
+            recomputeViewModels()
         } catch {
             errorMessage = friendlyMessage(for: error)
         }
@@ -239,7 +324,53 @@ final class WeatherStore {
 
     // MARK: - Persistence
 
+    private struct RestoredSettings {
+        var useMetric: Bool
+        var refreshIntervalMinutes: Int
+        var locations: [SavedLocation]
+        var selectedLocationID: String?
+        var preferredLaunchAtLogin: Bool?
+        var migratedLegacyLocation: Bool
+        var hiddenMeasurementIDs: Set<String>
+    }
+
+    private static func restoreSettings(from defaults: UserDefaults) -> RestoredSettings {
+        var migratedLegacyLocation = false
+        let locations: [SavedLocation]
+        if let data = defaults.data(forKey: savedLocationsKey),
+           let decoded = try? JSONDecoder().decode([SavedLocation].self, from: data) {
+            locations = decoded
+        } else if let data = defaults.data(forKey: legacySavedLocationKey),
+                  let legacy = SavedLocationMigration.legacy(from: data) {
+            locations = [legacy]
+            defaults.removeObject(forKey: legacySavedLocationKey)
+            migratedLegacyLocation = true
+        } else {
+            locations = []
+        }
+
+        let selectedID = defaults.string(forKey: selectedLocationKey)
+        let validSelectedID: String?
+        if let selectedID, locations.contains(where: { $0.id == selectedID }) {
+            validSelectedID = selectedID
+        } else {
+            defaults.removeObject(forKey: selectedLocationKey)
+            validSelectedID = nil
+        }
+
+        return RestoredSettings(
+            useMetric: defaults.object(forKey: useMetricKey) as? Bool ?? true,
+            refreshIntervalMinutes: defaults.object(forKey: refreshIntervalKey) as? Int ?? 15,
+            locations: locations,
+            selectedLocationID: validSelectedID,
+            preferredLaunchAtLogin: defaults.object(forKey: launchAtLoginKey) as? Bool,
+            migratedLegacyLocation: migratedLegacyLocation,
+            hiddenMeasurementIDs: Set(defaults.stringArray(forKey: hiddenMeasurementsKey) ?? [])
+        )
+    }
+
     private func persistSettings() {
+        guard persistEnabled, !isHydrating else { return }
         defaults.set(useMetric, forKey: Self.useMetricKey)
         defaults.set(refreshIntervalMinutes, forKey: Self.refreshIntervalKey)
         if let data = try? JSONEncoder().encode(savedLocations) {
@@ -252,6 +383,39 @@ final class WeatherStore {
         } else {
             defaults.removeObject(forKey: Self.selectedLocationKey)
         }
+        defaults.set(Array(hiddenMeasurementIDs).sorted(), forKey: Self.hiddenMeasurementsKey)
+    }
+
+    private func reconcileLaunchAtLogin(preferred: Bool?) {
+        if preferred == true {
+            applyLaunchAtLogin(true)
+        } else {
+            launchAtLogin = SMAppService.mainApp.status == .enabled
+        }
+    }
+
+    private func applyLaunchAtLogin(_ enabled: Bool) {
+        do {
+            if enabled {
+                if SMAppService.mainApp.status != .enabled {
+                    try SMAppService.mainApp.register()
+                }
+            } else if SMAppService.mainApp.status == .enabled {
+                try SMAppService.mainApp.unregister()
+            }
+            launchAtLoginError = nil
+        } catch {
+            launchAtLoginError = friendlyLaunchAtLoginMessage(for: error)
+        }
+        launchAtLogin = SMAppService.mainApp.status == .enabled
+    }
+
+    private func friendlyLaunchAtLoginMessage(for error: Error) -> String {
+        let nsError = error as NSError
+        if nsError.domain == "SMAppServiceErrorDomain" {
+            return "Couldn't update login item. Move DeepWeather to the Applications folder and try again."
+        }
+        return "Couldn't update launch at login: \(error.localizedDescription)"
     }
 
     // MARK: - Menu bar label
@@ -322,7 +486,18 @@ final class WeatherStore {
         return minutes >= sunrise && minutes < sunset
     }
 
-    var detailItems: [DetailItem] {
+    // MARK: - Derived snapshots
+
+    private func recomputeViewModels() {
+        detailItems = makeDetailItems()
+        chartMidnights = makeChartMidnights()
+        chartPoints = makeChartPoints()
+        moonItems = makeMoonItems()
+        upcomingHours = makeUpcomingHours()
+        dayItems = makeDayItems()
+    }
+
+    private func makeDetailItems() -> [DetailItem] {
         guard let c = weather?.currentCondition?.first else { return [] }
         let astro = weather?.weather?.first?.astronomy?.first
         var items = [
@@ -347,22 +522,20 @@ final class WeatherStore {
         if let moonset = astro?.moonset {
             items.append(DetailItem(id: "moonset", symbol: "moonset", title: "Moonset", value: moonset))
         }
-        return items
+        return items.filter { !hiddenMeasurementIDs.contains($0.id) }
     }
 
-    // MARK: - Charts
-
-    var chartMidnights: [Date] {
+    private func makeChartMidnights() -> [Date] {
         guard let days = weather?.weather else { return [] }
         return days.compactMap { day in
             day.date.flatMap { dateParser.date(from: $0) }
         }
     }
 
-    var chartPoints: [ChartPoint] {
+    private func makeChartPoints() -> [ChartPoint] {
         guard let days = weather?.weather else { return [] }
         let calendar = Calendar.current
-        let currentHour = Calendar.current.component(.hour, from: Date())
+        let currentHour = calendar.component(.hour, from: referenceNow)
         let observedTemp = currentTempValue
         var points: [ChartPoint] = []
         for (dayIndex, day) in days.enumerated() {
@@ -389,9 +562,7 @@ final class WeatherStore {
         return points
     }
 
-    // MARK: - Moon
-
-    var moonItems: [MoonItem] {
+    private func makeMoonItems() -> [MoonItem] {
         guard let days = weather?.weather else { return [] }
         return days.enumerated().map { index, day in
             let astro = day.astronomy?.first
@@ -408,12 +579,9 @@ final class WeatherStore {
         }
     }
 
-    // MARK: - Hourly
-
-    var upcomingHours: [HourlyItem] {
+    private func makeUpcomingHours() -> [HourlyItem] {
         guard let days = weather?.weather, let today = days.first else { return [] }
 
-        // All the hours of the current day (00:00–21:00 at 3 h intervals).
         let dayLabel = dayTitle(index: 0, dateString: today.date)
         var result: [HourlyItem] = []
         for entry in today.hourly ?? [] {
@@ -430,9 +598,7 @@ final class WeatherStore {
         return result
     }
 
-    // MARK: - Days
-
-    var dayItems: [DayItem] {
+    private func makeDayItems() -> [DayItem] {
         guard let days = weather?.weather else { return [] }
         return days.enumerated().map { index, day in
             let dateString = day.date
@@ -450,6 +616,12 @@ final class WeatherStore {
                 precipChance: precip
             )
         }
+    }
+
+    static func hourAlignedNow(_ date: Date = Date()) -> Date {
+        let calendar = Calendar.current
+        let parts = calendar.dateComponents([.year, .month, .day, .hour], from: date)
+        return calendar.date(from: parts) ?? date
     }
 
     // MARK: - Helpers

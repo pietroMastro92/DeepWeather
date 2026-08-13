@@ -8,8 +8,16 @@ struct TemperatureChartView: View {
     let unitSymbol: String
     let observedTemp: Double?
 
+    @Environment(\.menuPanelMetrics) private var metrics
+
+    private static let areaGradient = LinearGradient(
+        colors: [Color.orange.opacity(0.30), Color.orange.opacity(0.04)],
+        startPoint: .top,
+        endPoint: .bottom
+    )
+
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
+        VStack(alignment: .leading, spacing: 2) {
             Text("Temperature (\(unitSymbol))")
                 .font(.caption)
                 .foregroundStyle(.secondary)
@@ -21,13 +29,7 @@ struct TemperatureChartView: View {
                         y: .value("Temperature", temperature)
                     )
                     .interpolationMethod(.catmullRom)
-                    .foregroundStyle(
-                        LinearGradient(
-                            colors: [Color.orange.opacity(0.30), Color.orange.opacity(0.04)],
-                            startPoint: .top,
-                            endPoint: .bottom
-                        )
-                    )
+                    .foregroundStyle(Self.areaGradient)
                     .accessibilityHidden(true)
 
                     LineMark(
@@ -66,7 +68,17 @@ struct TemperatureChartView: View {
                     AxisValueLabel(format: .dateTime.weekday(.abbreviated))
                 }
             }
-            .frame(height: 110)
+            .frame(height: metrics.temperatureChartHeight)
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel("Temperature forecast")
+            .accessibilityValue(accessibilityValue)
         }
+    }
+
+    private var accessibilityValue: String {
+        guard let first = points.first(where: { $0.temperature != nil })?.temperature,
+              let last = points.last(where: { $0.temperature != nil })?.temperature
+        else { return "No temperature data" }
+        return "From \(first.formatted(.number.precision(.fractionLength(0)))) to \(last.formatted(.number.precision(.fractionLength(0)))) \(unitSymbol)"
     }
 }

@@ -2,26 +2,32 @@ import SwiftUI
 
 struct DetailGridView: View {
     let items: [WeatherStore.DetailItem]
+    @Environment(\.menuPanelMetrics) private var metrics
 
-    private let columns = [
-        GridItem(.flexible(), alignment: .leading),
-        GridItem(.flexible(), alignment: .leading)
-    ]
+    private var columns: [GridItem] {
+        Array(
+            repeating: GridItem(.flexible(), spacing: 8, alignment: .leading),
+            count: metrics.detailColumns
+        )
+    }
 
     var body: some View {
-        LazyVGrid(columns: columns, alignment: .leading, spacing: 10) {
+        LazyVGrid(columns: columns, alignment: .leading, spacing: metrics.detailSpacing) {
             ForEach(items) { item in
-                HStack(spacing: 8) {
+                HStack(alignment: .top, spacing: 5) {
                     Image(systemName: item.symbol)
-                        .frame(width: 18)
+                        .font(.system(size: 11))
                         .foregroundStyle(.secondary)
+                        .frame(width: 14, alignment: .center)
+                        .padding(.top, 1)
 
-                    VStack(alignment: .leading, spacing: 1) {
+                    VStack(alignment: .leading, spacing: 0) {
                         Text(item.title)
                             .font(.caption2)
                             .foregroundStyle(.secondary)
+                            .lineLimit(1)
                         Text(item.value)
-                            .font(.callout)
+                            .font(.caption)
                             .lineLimit(1)
                             .truncationMode(.tail)
                     }

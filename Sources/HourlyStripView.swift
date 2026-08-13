@@ -2,18 +2,18 @@ import SwiftUI
 
 struct HourlyStripView: View {
     let items: [WeatherStore.HourlyItem]
-
-    private let columns = Array(repeating: GridItem(.flexible(), spacing: 4), count: 4)
+    @Environment(\.menuPanelMetrics) private var metrics
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: 4) {
             Text("Hourly")
                 .font(.caption)
                 .foregroundStyle(.secondary)
 
-            LazyVGrid(columns: columns, spacing: 8) {
+            HStack(alignment: .top, spacing: metrics.hourlySpacing) {
                 ForEach(items) { item in
-                    HourlyItemView(item: item)
+                    HourlyItemView(item: item, iconSize: metrics.hourlyIconSize)
+                        .frame(maxWidth: .infinity)
                 }
             }
         }
@@ -22,34 +22,29 @@ struct HourlyStripView: View {
 
 private struct HourlyItemView: View {
     let item: WeatherStore.HourlyItem
+    let iconSize: CGFloat
 
     var body: some View {
-        VStack(spacing: 4) {
+        VStack(spacing: 2) {
             Text(item.hourText)
-                .font(.caption)
+                .font(.caption2)
                 .foregroundStyle(.secondary)
+                .monospacedDigit()
 
             Image(systemName: item.symbol)
-                .font(.system(size: 18))
+                .font(.system(size: iconSize))
                 .symbolRenderingMode(.hierarchical)
                 .foregroundStyle(.secondary)
-                .frame(height: 20)
+                .frame(height: iconSize + 1)
 
             Text(item.tempText)
-                .font(.callout)
+                .font(.caption)
                 .fontWeight(.medium)
+                .monospacedDigit()
 
-            if item.precipChance > 0 {
-                HStack(spacing: 2) {
-                    Image(systemName: "drop.fill")
-                    Text("\(item.precipChance)%")
-                }
+            Text(item.precipChance > 0 ? "\(item.precipChance)%" : " ")
                 .font(.caption2)
-                .foregroundStyle(.blue)
-            } else {
-                Text(" ")
-                    .font(.caption2)
-            }
+                .foregroundStyle(item.precipChance > 0 ? .blue : .clear)
         }
     }
 }

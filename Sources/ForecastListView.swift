@@ -2,9 +2,10 @@ import SwiftUI
 
 struct ForecastListView: View {
     let items: [WeatherStore.DayItem]
+    @Environment(\.menuPanelMetrics) private var metrics
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: metrics.forecastSpacing) {
             ForEach(items) { day in
                 ForecastRowView(day: day)
             }
@@ -16,16 +17,16 @@ private struct ForecastRowView: View {
     let day: WeatherStore.DayItem
 
     var body: some View {
-        HStack(spacing: 10) {
+        HStack(spacing: 8) {
             Text(day.title)
-                .font(.callout)
-                .frame(width: 52, alignment: .leading)
+                .font(.caption)
+                .frame(width: 48, alignment: .leading)
 
             Image(systemName: day.symbol)
-                .font(.system(size: 15))
+                .font(.system(size: 13))
                 .symbolRenderingMode(.hierarchical)
                 .foregroundStyle(.secondary)
-                .frame(width: 22)
+                .frame(width: 18)
 
             if day.precipChance > 0 {
                 HStack(spacing: 2) {
@@ -44,11 +45,13 @@ private struct ForecastRowView: View {
             Spacer()
 
             Text(day.minText)
-                .font(.callout)
+                .font(.caption)
                 .foregroundStyle(.secondary)
+                .monospacedDigit()
             Text(day.maxText)
-                .font(.callout)
+                .font(.caption)
                 .fontWeight(.medium)
+                .monospacedDigit()
         }
     }
 }

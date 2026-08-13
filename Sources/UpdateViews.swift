@@ -54,9 +54,6 @@ struct VersionInfoView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text("About")
-                .font(.callout)
-
             HStack {
                 Text("DeepWeather v\(currentVersion)")
                     .font(.caption)

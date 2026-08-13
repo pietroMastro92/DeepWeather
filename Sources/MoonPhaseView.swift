@@ -11,18 +11,18 @@ struct MoonPhaseView: View {
                         .font(.caption2)
                         .foregroundStyle(.secondary)
 
-                    HStack(spacing: 6) {
+                    HStack(spacing: 5) {
                         Image(systemName: item.phaseSymbol)
-                            .font(.system(size: 16))
+                            .font(.system(size: 13))
                             .symbolRenderingMode(.hierarchical)
                             .foregroundStyle(.secondary)
-                            .frame(width: 22)
+                            .frame(width: 16)
 
-                        VStack(alignment: .leading, spacing: 1) {
+                        VStack(alignment: .leading, spacing: 0) {
                             Text(item.phaseName)
-                                .font(.caption)
+                                .font(.caption2)
                                 .lineLimit(1)
-                                .minimumScaleFactor(0.7)
+                                .minimumScaleFactor(0.75)
                             Text(item.illuminationText)
                                 .font(.caption2)
                                 .foregroundStyle(.secondary)

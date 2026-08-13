@@ -16,8 +16,10 @@ A minimal macOS menu bar weather app powered by [wttr.in](https://github.com/chu
 - **3-day forecast**: min/max with condition icons
 - **Multiple saved locations**: add as many cities as you want, switch between them from a menu right in the panel or manage them in Settings (select / delete)
 - **Accurate city search**: type-ahead autocomplete via Open-Meteo geocoding (region/country shown to disambiguate homonyms); the app then queries wttr.in by exact coordinates — no more wrong fuzzy matches like "Potenza → Abriola"
-- Automatic location (IP-based) or a saved city
+- Automatic location (IP-based) or a saved city; saved cities persist across restarts
+- Optional launch at login (macOS login item)
 - Metric / Imperial units, configurable refresh interval (10–60 min)
+- Settings in the panel: choose units, refresh, launch at login, and which measurements appear on the Glance
 - Native macOS look: dark/light mode, Liquid Glass on macOS 26, LSUIElement (menu bar only)
 
 ## Installation

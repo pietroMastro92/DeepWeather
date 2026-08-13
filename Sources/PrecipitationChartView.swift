@@ -4,9 +4,10 @@ import Charts
 struct PrecipitationChartView: View {
     let points: [WeatherStore.ChartPoint]
     let midnights: [Date]
+    @Environment(\.menuPanelMetrics) private var metrics
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
+        VStack(alignment: .leading, spacing: 2) {
             Text("Precipitation")
                 .font(.caption)
                 .foregroundStyle(.secondary)
@@ -25,7 +26,15 @@ struct PrecipitationChartView: View {
                     AxisGridLine()
                 }
             }
-            .frame(height: 45)
+            .frame(height: metrics.precipitationChartHeight)
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel("Precipitation chance")
+            .accessibilityValue(accessibilityValue)
         }
+    }
+
+    private var accessibilityValue: String {
+        let peak = points.map(\.precipChance).max() ?? 0
+        return peak > 0 ? "Peak \(peak) percent" : "No rain expected"
     }
 }
