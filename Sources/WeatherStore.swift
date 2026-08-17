@@ -55,6 +55,14 @@ final class WeatherStore {
     private(set) var errorMessage: String?
     private(set) var lastUpdated: Date?
 
+    var weatherProvider: WeatherProvider = .auto {
+        didSet {
+            persistSettings()
+            guard !isHydrating else { return }
+            Task { await refresh() }
+        }
+    }
+
     private(set) var savedLocations: [SavedLocation] = [] {
         didSet { persistSettings() }
     }
@@ -72,6 +80,7 @@ final class WeatherStore {
     }
 
     private(set) var detailItems: [DetailItem] = []
+    private(set) var alerts: [WeatherAlert] = []
     private(set) var chartMidnights: [Date] = []
     private(set) var chartPoints: [ChartPoint] = []
     private(set) var moonItems: [MoonItem] = []
@@ -129,6 +138,7 @@ final class WeatherStore {
         self.weekdayFormatter = weekday
 
         let restored = Self.restoreSettings(from: defaults)
+        self.weatherProvider = restored.weatherProvider
         self.useMetric = restored.useMetric
         self.refreshIntervalMinutes = restored.refreshIntervalMinutes
         self.savedLocations = restored.locations
@@ -150,6 +160,7 @@ final class WeatherStore {
         previewWeather: WeatherResponse?,
         locations: [SavedLocation] = [],
         selectedID: String? = nil,
+        provider: WeatherProvider = .auto,
         isLoading: Bool = false,
         errorMessage: String? = nil,
         lastUpdated: Date? = nil
@@ -170,6 +181,7 @@ final class WeatherStore {
 
         self.savedLocations = locations
         self.selectedLocationID = selectedID
+        self.weatherProvider = provider
         self.weather = previewWeather
         self.isLoading = isLoading
         self.errorMessage = errorMessage
@@ -180,6 +192,7 @@ final class WeatherStore {
     }
 #endif
 
+    private static let weatherProviderKey = "weatherbar.weatherProvider"
     private static let useMetricKey = "weatherbar.useMetric"
     private static let savedLocationsKey = "weatherbar.savedLocations"
     private static let selectedLocationKey = "weatherbar.selectedLocationID"
@@ -291,12 +304,32 @@ final class WeatherStore {
 
         do {
             let query: String?
+            let lat: Double?
+            let lon: Double?
+            let city: String?
+            let country: String?
+
             if let selected = selectedLocation {
                 query = String(format: "%.5f,%.5f", selected.latitude, selected.longitude)
+                lat = selected.latitude
+                lon = selected.longitude
+                city = selected.name
+                country = selected.detail
             } else {
                 query = nil
+                lat = nil
+                lon = nil
+                city = nil
+                country = nil
             }
-            weather = try await client.fetch(location: query)
+            weather = try await client.fetch(
+                location: query,
+                latitude: lat,
+                longitude: lon,
+                cityName: city,
+                countryName: country,
+                provider: weatherProvider
+            )
             lastUpdated = Date()
             referenceNow = Self.hourAlignedNow()
             recomputeViewModels()
@@ -325,6 +358,7 @@ final class WeatherStore {
     // MARK: - Persistence
 
     private struct RestoredSettings {
+        var weatherProvider: WeatherProvider
         var useMetric: Bool
         var refreshIntervalMinutes: Int
         var locations: [SavedLocation]
@@ -358,7 +392,11 @@ final class WeatherStore {
             validSelectedID = nil
         }
 
+        let providerRaw = defaults.string(forKey: weatherProviderKey) ?? ""
+        let provider = WeatherProvider(rawValue: providerRaw) ?? .auto
+
         return RestoredSettings(
+            weatherProvider: provider,
             useMetric: defaults.object(forKey: useMetricKey) as? Bool ?? true,
             refreshIntervalMinutes: defaults.object(forKey: refreshIntervalKey) as? Int ?? 15,
             locations: locations,
@@ -371,6 +409,7 @@ final class WeatherStore {
 
     private func persistSettings() {
         guard persistEnabled, !isHydrating else { return }
+        defaults.set(weatherProvider.rawValue, forKey: Self.weatherProviderKey)
         defaults.set(useMetric, forKey: Self.useMetricKey)
         defaults.set(refreshIntervalMinutes, forKey: Self.refreshIntervalKey)
         if let data = try? JSONEncoder().encode(savedLocations) {
@@ -490,6 +529,7 @@ final class WeatherStore {
 
     private func recomputeViewModels() {
         detailItems = makeDetailItems()
+        alerts = WeatherAlert.detectAlerts(from: weather, useMetric: useMetric)
         chartMidnights = makeChartMidnights()
         chartPoints = makeChartPoints()
         moonItems = makeMoonItems()
@@ -564,17 +604,23 @@ final class WeatherStore {
 
     private func makeMoonItems() -> [MoonItem] {
         guard let days = weather?.weather else { return [] }
-        return days.enumerated().map { index, day in
+        return days.prefix(3).enumerated().map { index, day in
             let astro = day.astronomy?.first
             let dateString = day.date
             let title = dayTitle(index: index, dateString: dateString)
-            let phaseName = astro?.moonPhase ?? "—"
+            let date = day.date.flatMap { dateParser.date(from: $0) } ?? Date()
+            let moonState = LunarPhaseEngine.calculate(for: date)
+            let rawPhaseName = (astro?.moonPhase?.isEmpty == false) ? (astro?.moonPhase ?? moonState.phaseName) : moonState.phaseName
+            let localizedPhase = WeatherIconMapper.localizedMoonPhaseName(for: rawPhaseName)
+            let symbol = WeatherIconMapper.moonPhaseSymbol(for: rawPhaseName)
+            let illum = (astro?.moonIllumination?.isEmpty == false) ? (astro?.moonIllumination ?? "\(moonState.illuminationPercent)") : "\(moonState.illuminationPercent)"
+
             return MoonItem(
                 id: dateString ?? "day-\(index)",
                 title: title,
-                phaseSymbol: WeatherIconMapper.moonPhaseSymbol(for: astro?.moonPhase),
-                phaseName: phaseName,
-                illuminationText: astro?.moonIllumination.map { "\($0)%" } ?? "—"
+                phaseSymbol: symbol,
+                phaseName: localizedPhase,
+                illuminationText: "\(illum)%"
             )
         }
     }

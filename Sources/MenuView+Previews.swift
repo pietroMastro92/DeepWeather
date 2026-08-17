@@ -44,6 +44,15 @@ private enum WeatherPreviewData {
         )
     }
 
+    static func alertStore() -> WeatherStore {
+        WeatherStore(
+            previewWeather: heatwaveForecast,
+            locations: locations,
+            selectedID: rome.id,
+            lastUpdated: Date()
+        )
+    }
+
     static func loadingStore() -> WeatherStore {
         WeatherStore(previewWeather: nil, locations: locations, isLoading: true)
     }
@@ -80,6 +89,28 @@ private enum WeatherPreviewData {
         )
     }
 
+    static var heatwaveForecast: WeatherResponse {
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: Date())
+        let days = (0..<3).compactMap { offset -> DayForecast? in
+            guard let date = calendar.date(byAdding: .day, value: offset, to: today) else { return nil }
+            return dayForecast(date: date, offset: offset, isHeatwave: true)
+        }
+        return WeatherResponse(
+            currentCondition: [heatCurrent],
+            nearestArea: [
+                NearestArea(
+                    areaName: [TextValue(value: "Rome")],
+                    country: [TextValue(value: "Italy")],
+                    region: [TextValue(value: "Lazio")],
+                    latitude: "41.90",
+                    longitude: "12.50"
+                )
+            ],
+            weather: days
+        )
+    }
+
     private static var current: CurrentCondition {
         CurrentCondition(
             tempC: "18",
@@ -105,22 +136,49 @@ private enum WeatherPreviewData {
         )
     }
 
-    private static func dayForecast(date: Date, offset: Int) -> DayForecast {
+    private static var heatCurrent: CurrentCondition {
+        CurrentCondition(
+            tempC: "38",
+            tempF: "100",
+            feelsLikeC: "41",
+            feelsLikeF: "106",
+            humidity: "45",
+            cloudcover: "10",
+            pressure: "1012",
+            pressureInches: "29.9",
+            uvIndex: "9",
+            visibility: "10",
+            visibilityMiles: "6",
+            precipMM: "0.0",
+            precipInches: "0.0",
+            windspeedKmph: "8",
+            windspeedMiles: "5",
+            winddirDegree: "180",
+            winddir16Point: "S",
+            weatherCode: "113",
+            observationTime: "02:00 PM",
+            weatherDesc: [TextValue(value: "Sunny")]
+        )
+    }
+
+    private static func dayForecast(date: Date, offset: Int, isHeatwave: Bool = false) -> DayForecast {
         let formatter = DateFormatter()
         formatter.locale = Locale(identifier: "en_US_POSIX")
         formatter.dateFormat = "yyyy-MM-dd"
         let phases = ["Waxing Crescent", "First Quarter", "Waxing Gibbous"]
+        let maxC = isHeatwave ? (offset == 0 ? "39" : "38") : (offset == 0 ? "20" : "22")
+        let minC = isHeatwave ? "25" : "11"
         return DayForecast(
             date: formatter.string(from: date),
-            maxtempC: offset == 0 ? "20" : "22",
-            mintempC: "11",
-            maxtempF: "70",
-            mintempF: "52",
-            avgtempC: "16",
-            avgtempF: "61",
+            maxtempC: maxC,
+            mintempC: minC,
+            maxtempF: isHeatwave ? "102" : "70",
+            mintempF: isHeatwave ? "77" : "52",
+            avgtempC: isHeatwave ? "32" : "16",
+            avgtempF: isHeatwave ? "90" : "61",
             totalSnowCm: "0",
-            sunHour: "8",
-            uvIndex: "4",
+            sunHour: "12",
+            uvIndex: isHeatwave ? "9" : "4",
             astronomy: [
                 Astronomy(
                     sunrise: "06:21 AM",
@@ -132,13 +190,13 @@ private enum WeatherPreviewData {
                 )
             ],
             hourly: (0...7).map { index in
-                hourly(slot: index * 3, offset: offset)
+                hourly(slot: index * 3, offset: offset, isHeatwave: isHeatwave)
             }
         )
     }
 
-    private static func hourly(slot: Int, offset: Int) -> HourlyForecast {
-        let temp = 12 + slot / 2 + offset
+    private static func hourly(slot: Int, offset: Int, isHeatwave: Bool = false) -> HourlyForecast {
+        let temp = isHeatwave ? (28 + slot + offset) : (12 + slot / 2 + offset)
         return HourlyForecast(
             time: "\(slot * 100)",
             tempC: "\(temp)",
@@ -168,6 +226,14 @@ private enum WeatherPreviewData {
 #Preview("13-inch loaded") {
     MenuView(
         store: WeatherPreviewData.loadedStore(),
+        updateChecker: UpdateChecker(),
+        metricsOverride: .compact
+    )
+}
+
+#Preview("13-inch weather alert") {
+    MenuView(
+        store: WeatherPreviewData.alertStore(),
         updateChecker: UpdateChecker(),
         metricsOverride: .compact
     )

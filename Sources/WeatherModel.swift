@@ -2,7 +2,7 @@ import Foundation
 
 // MARK: - Root
 
-struct WeatherResponse: Decodable {
+struct WeatherResponse: Codable, Sendable {
     let currentCondition: [CurrentCondition]?
     let nearestArea: [NearestArea]?
     let weather: [DayForecast]?
@@ -14,13 +14,13 @@ struct WeatherResponse: Decodable {
     }
 }
 
-struct TextValue: Decodable {
+struct TextValue: Codable, Sendable {
     let value: String?
 }
 
 // MARK: - Current
 
-struct CurrentCondition: Decodable {
+struct CurrentCondition: Codable, Sendable {
     let tempC: String?
     let tempF: String?
     let feelsLikeC: String?
@@ -72,7 +72,7 @@ struct CurrentCondition: Decodable {
 
 // MARK: - Location
 
-struct NearestArea: Decodable {
+struct NearestArea: Codable, Sendable {
     let areaName: [TextValue]?
     let country: [TextValue]?
     let region: [TextValue]?
@@ -82,7 +82,7 @@ struct NearestArea: Decodable {
 
 // MARK: - Forecast
 
-struct DayForecast: Decodable {
+struct DayForecast: Codable, Sendable {
     let date: String?
     let maxtempC: String?
     let mintempC: String?
@@ -112,7 +112,7 @@ struct DayForecast: Decodable {
     }
 }
 
-struct Astronomy: Decodable {
+struct Astronomy: Codable, Sendable {
     let sunrise: String?
     let sunset: String?
     let moonrise: String?
@@ -130,7 +130,7 @@ struct Astronomy: Decodable {
     }
 }
 
-struct HourlyForecast: Decodable {
+struct HourlyForecast: Codable, Sendable {
     let time: String?
     let tempC: String?
     let tempF: String?

@@ -5,5 +5,8 @@ Derived/
 .build/
 DerivedData/
 
+# Release archives
+*.zip
+
 # macOS
 .DS_Store

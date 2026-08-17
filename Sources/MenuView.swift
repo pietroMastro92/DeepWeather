@@ -40,6 +40,10 @@ struct MenuView: View {
                 }
             )
 
+            if !store.alerts.isEmpty && !showSettings {
+                WeatherAlertCardView(alerts: store.alerts)
+            }
+
             if let message = store.errorMessage {
                 ErrorBannerView(message: message)
             }
@@ -64,8 +68,7 @@ struct MenuView: View {
             MenuFooterView(
                 lastUpdated: store.lastUpdated,
                 showSettings: $showSettings,
-                onRefresh: { await store.refresh() },
-                onQuit: quit
+                onRefresh: { await store.refresh() }
             )
         }
         .padding(panelMetrics.padding)
@@ -83,10 +86,6 @@ struct MenuView: View {
         withAnimation(.easeInOut(duration: 0.15)) {
             showSettings = false
         }
-    }
-
-    private func quit() {
-        NSApp.terminate(nil)
     }
 }
 
@@ -180,10 +179,9 @@ private struct MenuFooterView: View {
     let lastUpdated: Date?
     @Binding var showSettings: Bool
     let onRefresh: () async -> Void
-    let onQuit: () -> Void
 
     var body: some View {
-        HStack(spacing: 2) {
+        HStack(spacing: 4) {
             updatedLabel
                 .font(.caption)
                 .foregroundStyle(.secondary)
@@ -203,12 +201,6 @@ private struct MenuFooterView: View {
             }
             .buttonStyle(.borderless)
             .help(showSettings ? "Back to weather" : "Settings")
-
-            Button(action: onQuit) {
-                Image(systemName: "power")
-            }
-            .buttonStyle(.borderless)
-            .help("Quit DeepWeather")
         }
     }
 

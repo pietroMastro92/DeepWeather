@@ -23,6 +23,28 @@ struct SettingsView: View {
                 }
 
                 Section {
+                    Picker("Provider", selection: $store.weatherProvider) {
+                        ForEach(WeatherProvider.allCases) { prov in
+                            Text(prov.displayName).tag(prov)
+                        }
+                    }
+                    .pickerStyle(.menu)
+                    .accessibilityLabel("Weather Provider")
+
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(store.weatherProvider.displayName)
+                            .font(.caption.weight(.medium))
+                        Text(store.weatherProvider.subtitle)
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                    }
+                } header: {
+                    Text("Weather Data Source")
+                } footer: {
+                    Text("Auto mode uses direct official meteorological models with anomaly protection and failover.")
+                }
+
+                Section {
                     Picker("Units", selection: $store.useMetric) {
                         Text("Metric (°C, km/h)").tag(true)
                         Text("Imperial (°F, mph)").tag(false)
@@ -38,12 +60,6 @@ struct SettingsView: View {
 
                 Section("Conditions") {
                     ForEach(MeasurementID.conditions) { id in
-                        measurementToggle(id)
-                    }
-                }
-
-                Section("Sun & Moon Times") {
-                    ForEach(MeasurementID.sunAndMoonTimes) { id in
                         measurementToggle(id)
                     }
                 }
