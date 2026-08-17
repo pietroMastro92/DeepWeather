@@ -17,7 +17,8 @@ enum WeatherIconMapper {
         switch value {
         case 113: return isDay ? "sun.max" : "moon.stars"
         case 116: return isDay ? "cloud.sun" : "cloud.moon"
-        case 119, 122: return "cloud.fill"
+        case 119: return "cloud"
+        case 122: return "cloud.fill"
         case 143, 248, 260: return "cloud.fog"
         case 176, 263, 266, 281, 284, 293, 296: return "cloud.drizzle"
         case 299, 302, 305, 308, 353, 356, 359: return "cloud.rain"

@@ -1,5 +1,6 @@
 import Testing
 import Foundation
+import AppKit
 @testable import DeepWeather
 
 @Suite("DeepWeather Unit Tests")
@@ -37,6 +38,27 @@ struct DeepWeatherTests {
 
         let fullMoon = WeatherIconMapper.localizedMoonPhaseName(for: "Full Moon")
         #expect(fullMoon == "Full Moon")
+    }
+
+    @Test("SF Symbols Validity Test")
+    func testSFSymbolValidity() {
+        let codes = ["113", "116", "119", "122", "143", "176", "179", "182", "185", "200", "227", "230", "248", "260", "263", "266", "281", "284", "293", "296", "299", "302", "305", "308", "311", "314", "317", "320", "323", "326", "329", "332", "335", "338", "350", "353", "356", "359", "362", "365", "368", "371", "374", "377", "386", "389", "392", "395", "invalid"]
+
+        for code in codes {
+            let daySymbol = WeatherIconMapper.symbol(for: code, isDay: true)
+            #expect(!daySymbol.isEmpty)
+            #expect(NSImage(systemSymbolName: daySymbol, accessibilityDescription: nil) != nil, "Invalid SF Symbol for day code \(code): \(daySymbol)")
+
+            let nightSymbol = WeatherIconMapper.symbol(for: code, isDay: false)
+            #expect(!nightSymbol.isEmpty)
+            #expect(NSImage(systemSymbolName: nightSymbol, accessibilityDescription: nil) != nil, "Invalid SF Symbol for night code \(code): \(nightSymbol)")
+        }
+
+        let moonPhases = ["New Moon", "Waxing Crescent", "First Quarter", "Waxing Gibbous", "Full Moon", "Waning Gibbous", "Last Quarter", "Waning Crescent"]
+        for phase in moonPhases {
+            let sym = WeatherIconMapper.moonPhaseSymbol(for: phase)
+            #expect(NSImage(systemSymbolName: sym, accessibilityDescription: nil) != nil, "Invalid SF Symbol for moon phase \(phase): \(sym)")
+        }
     }
 
     @Test("Issue #1290 Summer Blizzard Anomaly Detection")
