@@ -46,6 +46,7 @@ struct WeatherAlertCardView: View {
                             .font(.system(size: 10, weight: .semibold))
                             .foregroundStyle(.secondary)
                     }
+                    .frame(maxWidth: .infinity, alignment: .leading)
                 }
                 .buttonStyle(.plain)
 
@@ -90,6 +91,7 @@ struct WeatherAlertCardView: View {
                 }
             }
             .padding(10)
+            .frame(maxWidth: .infinity, alignment: .leading)
             .background {
                 RoundedRectangle(cornerRadius: 10, style: .continuous)
                     .fill(highestSeverityColor.opacity(0.12))

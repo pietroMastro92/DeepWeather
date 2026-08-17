@@ -4,6 +4,16 @@ struct HourlyStripView: View {
     let items: [WeatherStore.HourlyItem]
     @Environment(\.menuPanelMetrics) private var metrics
 
+    private var displayItems: [WeatherStore.HourlyItem] {
+        if items.count > 8 {
+            return items.filter { item in
+                let hour = Int(item.hourText.prefix(2)) ?? 0
+                return hour % 3 == 0
+            }
+        }
+        return items
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
             Text("Hourly")
@@ -11,7 +21,7 @@ struct HourlyStripView: View {
                 .foregroundStyle(.secondary)
 
             HStack(alignment: .top, spacing: metrics.hourlySpacing) {
-                ForEach(items) { item in
+                ForEach(displayItems) { item in
                     HourlyItemView(item: item, iconSize: metrics.hourlyIconSize)
                         .frame(maxWidth: .infinity)
                 }
@@ -30,6 +40,7 @@ private struct HourlyItemView: View {
                 .font(.caption2)
                 .foregroundStyle(.secondary)
                 .monospacedDigit()
+                .lineLimit(1)
 
             Image(systemName: item.symbol)
                 .font(.system(size: iconSize))
@@ -41,10 +52,12 @@ private struct HourlyItemView: View {
                 .font(.caption)
                 .fontWeight(.medium)
                 .monospacedDigit()
+                .lineLimit(1)
 
             Text(item.precipChance > 0 ? "\(item.precipChance)%" : " ")
                 .font(.caption2)
                 .foregroundStyle(item.precipChance > 0 ? .blue : .clear)
+                .lineLimit(1)
         }
     }
 }

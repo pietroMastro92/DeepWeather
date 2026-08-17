@@ -108,13 +108,13 @@ struct DeepWeatherTests {
                 "wind_speed_10m": 12.0
             },
             "hourly": {
-                "time": ["2026-08-17T12:00", "2026-08-17T13:00"],
-                "temperature_2m": [24.0, 25.4],
-                "relative_humidity_2m": [48, 45],
-                "apparent_temperature": [24.5, 25.8],
-                "precipitation_probability": [0, 0],
-                "weather_code": [0, 0],
-                "wind_speed_10m": [11.0, 12.0]
+                "time": ["2026-08-17T00:00", "2026-08-17T01:00", "2026-08-17T02:00", "2026-08-17T03:00", "2026-08-17T06:00", "2026-08-17T09:00", "2026-08-17T12:00", "2026-08-17T15:00", "2026-08-17T18:00", "2026-08-17T21:00"],
+                "temperature_2m": [20.0, 21.0, 22.0, 23.0, 24.0, 25.0, 26.0, 25.0, 23.0, 21.0],
+                "relative_humidity_2m": [50, 50, 50, 48, 45, 45, 45, 50, 55, 60],
+                "apparent_temperature": [20.0, 21.0, 22.0, 23.0, 24.5, 25.8, 26.5, 25.5, 23.5, 21.5],
+                "precipitation_probability": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                "weather_code": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                "wind_speed_10m": [10.0, 10.0, 10.0, 11.0, 11.0, 12.0, 12.0, 11.0, 10.0, 9.0]
             },
             "daily": {
                 "time": ["2026-08-17", "2026-08-18", "2026-08-19"],
@@ -135,6 +135,7 @@ struct DeepWeatherTests {
         #expect(adapted.weather?.count == 3)
         #expect(adapted.weather?.first?.maxtempC == "27")
         #expect(adapted.weather?.first?.mintempC == "18")
+        #expect(adapted.weather?.first?.hourly?.count == 8)
         #expect(adapted.nearestArea?.first?.areaName?.first?.value == "London")
 
         let validSanity = WeatherSanityValidator.validate(adapted, latitude: 51.5074)

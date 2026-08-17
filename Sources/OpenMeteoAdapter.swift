@@ -157,13 +157,14 @@ struct OpenMeteoAdapter: Sendable {
                 moonIllumination: String(moonState.illuminationPercent)
             )]
 
-            // Filter hourly entries belonging to this date
+            // Filter hourly entries belonging to this date at 3-hour intervals (00:00, 03:00, 06:00, 09:00, 12:00, 15:00, 18:00, 21:00)
             var dayHourly: [HourlyForecast] = []
             for (hIdx, hTime) in hourlyTimes.enumerated() {
                 if hTime.starts(with: dayDateString) {
                     let hourPart = hTime.components(separatedBy: "T").last?.components(separatedBy: ":").first ?? "00"
                     let hourInt = Int(hourPart) ?? 0
-                    let hourString = String(format: "%d00", hourInt)
+                    guard hourInt % 3 == 0 else { continue }
+                    let hourString = hourInt == 0 ? "0" : "\(hourInt)00"
 
                     let hC = hIdx < hourlyTemps.count ? hourlyTemps[hIdx] : 20.0
                     let hF = hC * 9.0 / 5.0 + 32.0
