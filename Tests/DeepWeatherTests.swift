@@ -127,7 +127,10 @@ struct DeepWeatherTests {
                 "weather_code": 0,
                 "cloud_cover": 10,
                 "surface_pressure": 1015.0,
-                "wind_speed_10m": 12.0
+                "wind_speed_10m": 12.0,
+                "wind_direction_10m": 180,
+                "uv_index": 5.8,
+                "visibility": 10000.0
             },
             "hourly": {
                 "time": ["2026-08-17T00:00", "2026-08-17T01:00", "2026-08-17T02:00", "2026-08-17T03:00", "2026-08-17T06:00", "2026-08-17T09:00", "2026-08-17T12:00", "2026-08-17T15:00", "2026-08-17T18:00", "2026-08-17T21:00"],
@@ -154,6 +157,11 @@ struct DeepWeatherTests {
 
         #expect(adapted.currentCondition?.first?.tempC == "25")
         #expect(adapted.currentCondition?.first?.weatherCode == "113")
+        #expect(adapted.currentCondition?.first?.uvIndex == "6")
+        #expect(adapted.currentCondition?.first?.visibility == "10")
+        #expect(adapted.currentCondition?.first?.visibilityMiles == "6")
+        #expect(adapted.currentCondition?.first?.pressure == "1015")
+        #expect(adapted.currentCondition?.first?.winddir16Point == "S")
         #expect(adapted.weather?.count == 3)
         #expect(adapted.weather?.first?.maxtempC == "27")
         #expect(adapted.weather?.first?.mintempC == "18")
