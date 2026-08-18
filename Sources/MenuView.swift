@@ -60,15 +60,19 @@ struct MenuView: View {
             MenuMiddleContent(
                 store: store,
                 updateChecker: updateChecker,
-                showSettings: showSettings,
-                onCloseSettings: closeSettings
+                showSettings: showSettings
             )
 
             Divider()
             MenuFooterView(
                 lastUpdated: store.lastUpdated,
                 showSettings: $showSettings,
-                onRefresh: { await store.refresh() }
+                onRefresh: { await store.refresh() },
+                onCloseSettings: {
+                    Task {
+                        await store.refresh()
+                    }
+                }
             )
         }
         .padding(panelMetrics.padding)
@@ -81,19 +85,12 @@ struct MenuView: View {
             }
         }
     }
-
-    private func closeSettings() {
-        withAnimation(.easeInOut(duration: 0.15)) {
-            showSettings = false
-        }
-    }
 }
 
 private struct MenuMiddleContent: View {
     @Bindable var store: WeatherStore
     let updateChecker: UpdateChecker
     let showSettings: Bool
-    let onCloseSettings: () -> Void
     @Environment(\.menuPanelMetrics) private var metrics
 
     var body: some View {
@@ -101,8 +98,7 @@ private struct MenuMiddleContent: View {
             ScrollView {
                 SettingsView(
                     store: store,
-                    updateChecker: updateChecker,
-                    onDone: onCloseSettings
+                    updateChecker: updateChecker
                 )
             }
             .scrollIndicators(.automatic)
@@ -179,28 +175,41 @@ private struct MenuFooterView: View {
     let lastUpdated: Date?
     @Binding var showSettings: Bool
     let onRefresh: () async -> Void
+    let onCloseSettings: () -> Void
 
     var body: some View {
-        HStack(spacing: 4) {
-            updatedLabel
-                .font(.caption)
-                .foregroundStyle(.secondary)
-            Spacer()
-            Button {
-                Task { await onRefresh() }
-            } label: {
-                Image(systemName: "arrow.clockwise")
+        HStack(spacing: 6) {
+            if showSettings {
+                Text("Settings")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.primary)
+            } else {
+                updatedLabel
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
-            .buttonStyle(.borderless)
-            .help("Refresh now")
-            .keyboardShortcut("r")
+
+            Spacer()
+
+            if !showSettings {
+                Button {
+                    Task { await onRefresh() }
+                } label: {
+                    Image(systemName: "arrow.clockwise")
+                }
+                .buttonStyle(.borderless)
+                .help("Refresh now")
+                .keyboardShortcut("r")
+            }
 
             Button(action: toggleSettings) {
-                Image(systemName: "gearshape")
+                Image(systemName: showSettings ? "checkmark.circle.fill" : "gearshape")
+                    .font(showSettings ? .system(size: 15, weight: .semibold) : .system(size: 13))
                     .foregroundStyle(showSettings ? Color.accentColor : Color.secondary)
             }
             .buttonStyle(.borderless)
-            .help(showSettings ? "Back to weather" : "Settings")
+            .help(showSettings ? "Save & Close Settings" : "Settings")
+            .keyboardShortcut(showSettings ? .cancelAction : .defaultAction)
         }
     }
 
@@ -213,8 +222,13 @@ private struct MenuFooterView: View {
     }
 
     private func toggleSettings() {
-        withAnimation(.easeInOut(duration: 0.15)) {
-            showSettings.toggle()
+        withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+            if showSettings {
+                showSettings = false
+                onCloseSettings()
+            } else {
+                showSettings = true
+            }
         }
     }
 }

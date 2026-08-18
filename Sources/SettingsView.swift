@@ -3,68 +3,60 @@ import SwiftUI
 struct SettingsView: View {
     @Bindable var store: WeatherStore
     let updateChecker: UpdateChecker
-    let onDone: () -> Void
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack {
-                Text("Settings")
-                    .font(.headline)
-                Spacer()
-                Button("Done", action: onDone)
-                    .buttonStyle(.bordered)
-                    .controlSize(.small)
-                    .keyboardShortcut(.cancelAction)
+        Form {
+            Section("Locations") {
+                LocationSearchView(store: store)
             }
 
-            Form {
-                Section("Locations") {
-                    LocationSearchView(store: store)
-                }
-
-                Section {
-                    Picker("Provider", selection: $store.weatherProvider) {
-                        ForEach(WeatherProvider.allCases) { prov in
-                            Text(prov.displayName).tag(prov)
-                        }
-                    }
-                    .pickerStyle(.menu)
-                    .accessibilityLabel("Weather Provider")
-
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(store.weatherProvider.displayName)
-                            .font(.caption.weight(.medium))
-                        Text(store.weatherProvider.subtitle)
-                            .font(.caption2)
-                            .foregroundStyle(.secondary)
-                    }
-                } header: {
-                    Text("Weather Data Source")
-                } footer: {
-                    Text("Auto mode uses direct official meteorological models with anomaly protection and failover.")
-                }
-
-                Section {
-                    Picker("Units", selection: $store.useMetric) {
-                        Text("Metric (°C, km/h)").tag(true)
-                        Text("Imperial (°F, mph)").tag(false)
-                    }
-                    .pickerStyle(.segmented)
-                    .labelsHidden()
-                    .accessibilityLabel("Units")
-                } header: {
-                    Text("Display")
-                } footer: {
-                    Text("Units change how the Glance shows numbers. Measurements hide cells in the detail grid.")
-                }
-
-                Section("Conditions") {
-                    ForEach(MeasurementID.conditions) { id in
-                        measurementToggle(id)
+            Section {
+                Picker("Provider", selection: $store.weatherProvider) {
+                    ForEach(WeatherProvider.allCases) { prov in
+                        Text(prov.displayName).tag(prov)
                     }
                 }
+                .pickerStyle(.menu)
+                .accessibilityLabel("Weather Provider")
 
-                Section("Refresh") {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(store.weatherProvider.displayName)
+                        .font(.caption.weight(.medium))
+                    Text(store.weatherProvider.subtitle)
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
+            } header: {
+                Text("Weather Data Source")
+            } footer: {
+                Text("Auto mode uses direct official meteorological models with anomaly protection and failover.")
+            }
+
+            Section {
+                Picker("Units", selection: $store.useMetric) {
+                    Text("Metric (°C, km/h)").tag(true)
+                    Text("Imperial (°F, mph)").tag(false)
+                }
+                .pickerStyle(.segmented)
+                .labelsHidden()
+                .accessibilityLabel("Units")
+
+                Divider()
+
+                ForEach(MeasurementID.conditions) { id in
+                    measurementToggle(id)
+                }
+            } header: {
+                Text("Display & Conditions")
+            } footer: {
+                Text("Customize units and visible measurement cells in the detail grid.")
+            }
+
+            Section {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Refresh Frequency")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
                     Picker("Refresh", selection: $store.refreshIntervalMinutes) {
                         Text("10 min").tag(10)
                         Text("15 min").tag(15)
@@ -76,38 +68,33 @@ struct SettingsView: View {
                     .accessibilityLabel("Refresh")
                 }
 
-                Section {
-                    Toggle("Launch at login", isOn: launchAtLoginBinding)
-                    Text("Open DeepWeather automatically when you log in to this Mac.")
+                Toggle("Launch at login", isOn: launchAtLoginBinding)
+                if let error = store.launchAtLoginError {
+                    Text(error)
                         .font(.caption2)
-                        .foregroundStyle(.secondary)
-                    if let error = store.launchAtLoginError {
-                        Text(error)
-                            .font(.caption2)
-                            .foregroundStyle(.red)
-                    }
-                } header: {
-                    Text("Startup")
+                        .foregroundStyle(.red)
                 }
 
-                Section("About") {
-                    VersionInfoView(
-                        currentVersion: UpdateChecker.currentVersion,
-                        latestVersion: updateChecker.latestVersion,
-                        updateAvailable: updateChecker.updateAvailable,
-                        isChecking: updateChecker.isChecking,
-                        onCheck: { Task { await updateChecker.checkForUpdates() } }
-                    )
-                    if let error = updateChecker.errorMessage {
-                        Text(error)
-                            .font(.caption2)
-                            .foregroundStyle(.red)
-                    }
+                Divider()
+
+                VersionInfoView(
+                    currentVersion: UpdateChecker.currentVersion,
+                    latestVersion: updateChecker.latestVersion,
+                    updateAvailable: updateChecker.updateAvailable,
+                    isChecking: updateChecker.isChecking,
+                    onCheck: { Task { await updateChecker.checkForUpdates() } }
+                )
+                if let error = updateChecker.errorMessage {
+                    Text(error)
+                        .font(.caption2)
+                        .foregroundStyle(.red)
                 }
+            } header: {
+                Text("System & Startup")
             }
-            .formStyle(.grouped)
-            .scrollContentBackground(.hidden)
         }
+        .formStyle(.grouped)
+        .scrollContentBackground(.hidden)
     }
 
     private func measurementToggle(_ id: MeasurementID) -> some View {
