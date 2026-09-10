@@ -2,12 +2,21 @@ import SwiftUI
 
 struct ForecastListView: View {
     let items: [WeatherStore.DayItem]
+    var selectedDayIndex: Int = 0
+    var onSelectDay: ((Int) -> Void)?
     @Environment(\.menuPanelMetrics) private var metrics
 
     var body: some View {
         VStack(alignment: .leading, spacing: metrics.forecastSpacing) {
             ForEach(items) { day in
-                ForecastRowView(day: day)
+                ForecastRowView(
+                    day: day,
+                    isSelected: day.index == selectedDayIndex
+                )
+                .contentShape(Rectangle())
+                .onTapGesture {
+                    onSelectDay?(day.index)
+                }
             }
         }
     }
@@ -15,11 +24,13 @@ struct ForecastListView: View {
 
 private struct ForecastRowView: View {
     let day: WeatherStore.DayItem
+    let isSelected: Bool
 
     var body: some View {
         HStack(spacing: 8) {
             Text(day.title)
                 .font(.caption)
+                .fontWeight(isSelected ? .semibold : .regular)
                 .frame(width: 48, alignment: .leading)
 
             Image(systemName: day.symbol)
@@ -53,5 +64,11 @@ private struct ForecastRowView: View {
                 .fontWeight(.medium)
                 .monospacedDigit()
         }
+        .padding(.vertical, 2)
+        .padding(.horizontal, 4)
+        .background(
+            RoundedRectangle(cornerRadius: 4, style: .continuous)
+                .fill(isSelected ? Color.primary.opacity(0.08) : Color.clear)
+        )
     }
 }

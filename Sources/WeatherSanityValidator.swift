@@ -16,7 +16,7 @@ struct WeatherSanityValidator: Sendable {
     static func validate(
         _ response: WeatherResponse,
         latitude: Double? = nil,
-        date: Date = Date()
+        date: Date? = nil
     ) -> SanityResult {
         guard let current = response.currentCondition?.first else {
             return .anomalous(reason: "Missing current weather conditions.")
@@ -29,9 +29,24 @@ struct WeatherSanityValidator: Sendable {
             }
 
             // 2. Mid-summer blizzard/heavy snow anomaly check (Issue #1290 detection)
-            // wttr.in has a known bug returning -2°C Blizzard during Northern Hemisphere summer (June, July, August)
+            // wttr.in has a known bug returning -2°C Blizzard during Northern Hemisphere summer
+            //
+            // Determine the effective date: prefer an explicit date, then the forecast date
+            // from the response, and fall back to the current date.
+            let effectiveDate: Date
+            if let date {
+                effectiveDate = date
+            } else if let forecastDateStr = response.weather?.first?.date {
+                let parser = DateFormatter()
+                parser.locale = Locale(identifier: "en_US_POSIX")
+                parser.dateFormat = "yyyy-MM-dd"
+                effectiveDate = parser.date(from: forecastDateStr) ?? Date()
+            } else {
+                effectiveDate = Date()
+            }
+
             let calendar = Calendar.current
-            let month = calendar.component(.month, from: date)
+            let month = calendar.component(.month, from: effectiveDate)
             let isNorthernSummer = (6...8).contains(month)
             let isSouthernSummer = [12, 1, 2].contains(month)
 

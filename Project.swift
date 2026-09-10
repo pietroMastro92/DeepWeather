@@ -11,7 +11,7 @@ let project = Project(
             deploymentTargets: .macOS("14.0"),
             infoPlist: .extendingDefault(with: [
                 "LSUIElement": true,
-                "CFBundleShortVersionString": "1.7.2"
+                "CFBundleShortVersionString": "1.8.0"
             ]),
             sources: ["Sources/**"],
             resources: ["Resources/**"],

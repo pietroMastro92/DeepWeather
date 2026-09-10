@@ -2,6 +2,7 @@ import SwiftUI
 
 struct HourlyStripView: View {
     let items: [WeatherStore.HourlyItem]
+    var selectedDayTitle: String?
     @Environment(\.menuPanelMetrics) private var metrics
 
     private var displayItems: [WeatherStore.HourlyItem] {
@@ -16,7 +17,7 @@ struct HourlyStripView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text("Hourly")
+            Text(selectedDayTitle.map { "Hourly · \($0)" } ?? "Hourly")
                 .font(.caption)
                 .foregroundStyle(.secondary)
 

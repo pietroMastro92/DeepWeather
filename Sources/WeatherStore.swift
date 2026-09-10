@@ -1,6 +1,7 @@
 import Foundation
 import Observation
 import ServiceManagement
+import SwiftUI
 
 @MainActor
 @Observable
@@ -26,6 +27,7 @@ final class WeatherStore {
 
     struct DayItem: Identifiable, Equatable {
         let id: String
+        let index: Int
         let title: String
         let symbol: String
         let minText: String
@@ -86,6 +88,15 @@ final class WeatherStore {
     private(set) var moonItems: [MoonItem] = []
     private(set) var upcomingHours: [HourlyItem] = []
     private(set) var dayItems: [DayItem] = []
+    /// Which forecast day is selected for the hourly strip (0 = today).
+    var selectedForecastDayIndex: Int = 0
+    /// Title shown next to "Hourly" when a non-today day is selected.
+    var selectedForecastDayTitle: String? {
+        guard selectedForecastDayIndex > 0,
+              let item = dayItems.first(where: { $0.index == selectedForecastDayIndex })
+        else { return nil }
+        return item.title
+    }
     /// Hour-aligned clock used by charts so `body` never constructs `Date()`.
     private(set) var referenceNow = Date()
 
@@ -291,6 +302,20 @@ final class WeatherStore {
     @MainActor
     func resetToAutomaticLocation() {
         selectSavedLocation(nil)
+    }
+
+    // MARK: - Forecast day selection
+
+    @MainActor
+    func selectForecastDay(_ index: Int) {
+        withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+            if selectedForecastDayIndex == index {
+                selectedForecastDayIndex = 0
+            } else {
+                selectedForecastDayIndex = index
+            }
+            upcomingHours = makeUpcomingHours()
+        }
     }
 
     // MARK: - Fetching
@@ -528,13 +553,14 @@ final class WeatherStore {
     // MARK: - Derived snapshots
 
     private func recomputeViewModels() {
+        selectedForecastDayIndex = 0
         detailItems = makeDetailItems()
         alerts = WeatherAlert.detectAlerts(from: weather, useMetric: useMetric)
         chartMidnights = makeChartMidnights()
         chartPoints = makeChartPoints()
         moonItems = makeMoonItems()
-        upcomingHours = makeUpcomingHours()
         dayItems = makeDayItems()
+        upcomingHours = makeUpcomingHours()
     }
 
     private func makeDetailItems() -> [DetailItem] {
@@ -626,14 +652,16 @@ final class WeatherStore {
     }
 
     private func makeUpcomingHours() -> [HourlyItem] {
-        guard let days = weather?.weather, let today = days.first else { return [] }
+        guard let days = weather?.weather else { return [] }
+        let dayIndex = min(selectedForecastDayIndex, days.count - 1)
+        let day = days[dayIndex]
 
-        let dayLabel = dayTitle(index: 0, dateString: today.date)
+        let dayLabel = dayTitle(index: dayIndex, dateString: day.date)
         var result: [HourlyItem] = []
-        for entry in today.hourly ?? [] {
+        for entry in day.hourly ?? [] {
             guard let hour = entry.hour else { continue }
             result.append(HourlyItem(
-                id: "0-\(hour)",
+                id: "\(dayIndex)-\(hour)",
                 dayTitle: dayLabel,
                 hourText: String(format: "%02d:00", hour),
                 symbol: WeatherIconMapper.symbol(for: entry.weatherCode, isDay: (6..<21).contains(hour)),
@@ -655,6 +683,7 @@ final class WeatherStore {
 
             return DayItem(
                 id: dateString ?? "day-\(index)",
+                index: index,
                 title: title,
                 symbol: WeatherIconMapper.symbol(for: representative?.weatherCode, isDay: true),
                 minText: tempString(day.mintempC, day.mintempF),

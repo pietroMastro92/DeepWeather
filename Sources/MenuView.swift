@@ -114,7 +114,10 @@ private struct MenuMiddleContent: View {
                 observedTemp: store.currentTempValue,
                 moonItems: store.moonItems,
                 upcomingHours: store.upcomingHours,
-                dayItems: store.dayItems
+                selectedDayTitle: store.selectedForecastDayTitle,
+                dayItems: store.dayItems,
+                selectedDayIndex: store.selectedForecastDayIndex,
+                onSelectDay: { store.selectForecastDay($0) }
             )
         } else if store.isLoading {
             LoadingSection()
@@ -131,7 +134,10 @@ private struct WeatherDataSectionView: View {
     let observedTemp: Double?
     let moonItems: [WeatherStore.MoonItem]
     let upcomingHours: [WeatherStore.HourlyItem]
+    var selectedDayTitle: String?
     let dayItems: [WeatherStore.DayItem]
+    var selectedDayIndex: Int = 0
+    var onSelectDay: ((Int) -> Void)?
 
     @Environment(\.menuPanelMetrics) private var metrics
 
@@ -152,8 +158,15 @@ private struct WeatherDataSectionView: View {
                 midnights: chartMidnights
             )
             MoonPhaseView(items: moonItems)
-            HourlyStripView(items: upcomingHours)
-            ForecastListView(items: dayItems)
+            HourlyStripView(
+                items: upcomingHours,
+                selectedDayTitle: selectedDayTitle
+            )
+            ForecastListView(
+                items: dayItems,
+                selectedDayIndex: selectedDayIndex,
+                onSelectDay: onSelectDay
+            )
         }
     }
 }
